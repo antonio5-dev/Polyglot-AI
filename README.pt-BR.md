@@ -32,6 +32,10 @@ Abra <http://localhost:8000> no Chrome. **Não** abra o `index.html` com duplo c
 2. Na Vercel: **Add New → Project → Import** do repositório, preset **Other**, sem build. **Deploy**.
 3. A cada `git push` há novo deploy. Ao alterar arquivos, incremente `CACHE_VERSION` no `sw.js`.
 
+## Recursos novos
+- **Progresso totalmente separado por idioma:** nível, meta, meta diária, sequência, minutos, vocabulário, erros, histórico de lições e memória (máx. 20 itens por idioma).
+- Botão **Apagar todos os dados** (Configurações, no fim) para recomeçar do zero, com opção de manter a chave de API.
+
 ## Observações
 - O reconhecimento de fala mostra apenas o que o reconhecedor **entendeu**; **não** é nota de pronúncia.
 - Sem voz instalada para um idioma no Android: Configurações → Sistema → Idiomas → Texto para fala.

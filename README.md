@@ -62,7 +62,8 @@ Why this is the best way to test: the voice system (microphone / speech recognit
 - **Flashcards** with spaced repetition (1, 3, 7, 14, 30 days; a miss restarts the card).
 - **Level test** (A1–C2, with approximate HSK / JLPT / TOPIK equivalents for zh/ja/ko).
 - **Progress:** streak, daily goal, minutes per week, words by stage, most frequent mistakes, lesson history, AI-estimated level (labelled as an estimate).
-- **Student memory** (max 20 editable items) used by the AI; the AI proposes updates at the end of a session.
+- **Fully separate progress per language:** each practice language has its own level, goal, daily goal, streak, minutes, vocabulary, mistakes, lesson history and student memory (max 20 editable items per language, used by the AI; it proposes updates at the end of a session).
+- **Delete ALL data** button (Settings, bottom) to wipe everything and start from zero, with the option to keep your API key.
 - **Voice:** per-language voices, speed 0.5x–2x, "slow" button on each sentence, microphone with target/native language switch, optional hands-free mode.
 - Export / import all data as JSON.
 

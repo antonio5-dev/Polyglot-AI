@@ -1,6 +1,6 @@
 // Network-first service worker with cache fallback.
 // Bump CACHE_VERSION on every delivery.
-const CACHE_VERSION = 'polyglot-v1';
+const CACHE_VERSION = 'polyglot-v2';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

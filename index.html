@@ -282,6 +282,12 @@ installTip:['Install via the browser menu ⋮ → “Install app” if the butto
 sessEnded:['Session saved.','Sessão salva.','Sesión guardada.','Session enregistrée.','Sitzung gespeichert.','会话已保存。','세션이 저장되었습니다.','セッションを保存しました。'],
 rawFallback:['(The reply was not valid JSON; showing raw text.)','(A resposta não veio em JSON válido; mostrando texto cru.)','(La respuesta no era JSON válido; se muestra el texto sin procesar.)','(Réponse non valide en JSON ; texte brut affiché.)','(Antwort war kein gültiges JSON; Rohtext wird angezeigt.)','（回复不是有效 JSON，显示原文。）','(응답이 유효한 JSON이 아니어서 원문을 표시합니다.)','（JSON が不正なため、生のテキストを表示します。）'],
 startChat:['Start a session from Home.','Inicie uma sessão na tela Início.','Inicia una sesión desde Inicio.','Démarrez une session depuis l’accueil.','Starte eine Sitzung auf dem Startbildschirm.','请从首页开始会话。','홈에서 세션을 시작하세요.','ホームからセッションを始めてください。'],
+setProfile:["Learning profile", "Perfil de aprendizado", "Perfil de aprendizaje", "Profil d’apprentissage", "Lernprofil", "学习档案", "학습 프로필", "学習プロフィール"],
+delData:["Delete ALL data", "Apagar todos os dados", "Borrar todos los datos", "Supprimer TOUTES les données", "ALLE Daten löschen", "删除所有数据", "모든 데이터 삭제", "すべてのデータを削除"],
+delDataWarn:["This permanently deletes everything stored on this device for ALL languages: sessions, vocabulary, progress, memory and settings. This cannot be undone. Tip: export a backup first.", "Isto apaga permanentemente tudo o que está salvo neste dispositivo, de TODOS os idiomas: sessões, vocabulário, progresso, memória e configurações. Não dá para desfazer. Dica: exporte um backup antes.", "Esto borra de forma permanente todo lo guardado en este dispositivo, de TODOS los idiomas: sesiones, vocabulario, progreso, memoria y ajustes. No se puede deshacer. Consejo: exporta una copia antes.", "Cela supprime définitivement tout ce qui est enregistré sur cet appareil, pour TOUTES les langues : sessions, vocabulaire, progrès, mémoire et réglages. Action irréversible. Astuce : exportez d’abord une sauvegarde.", "Dies löscht dauerhaft alles auf diesem Gerät, für ALLE Sprachen: Sitzungen, Vokabeln, Fortschritt, Gedächtnis und Einstellungen. Das kann nicht rückgängig gemacht werden. Tipp: Exportiere vorher eine Sicherung.", "这将永久删除此设备上所有语言的全部数据：会话、词汇、进度、记忆和设置，无法撤销。提示：请先导出备份。", "이 기기에 저장된 모든 언어의 데이터(세션, 어휘, 진행 상황, 메모리, 설정)가 영구적으로 삭제되며 되돌릴 수 없습니다. 팁: 먼저 백업을 내보내세요.", "この端末に保存されたすべての言語のデータ（セッション、単語、進捗、メモリ、設定）を完全に削除します。元に戻せません。ヒント：先にバックアップを書き出してください。"],
+keepKeyChk:["Keep my API key", "Manter minha chave de API", "Conservar mi clave de API", "Conserver ma clé API", "Meinen API-Schlüssel behalten", "保留我的 API 密钥", "API 키 유지", "API キーを残す"],
+delEverything:["Delete everything", "Apagar tudo", "Borrar todo", "Tout supprimer", "Alles löschen", "全部删除", "전부 삭제", "すべて削除"],
+deleted:["All data deleted.", "Todos os dados apagados.", "Todos los datos borrados.", "Toutes les données supprimées.", "Alle Daten gelöscht.", "所有数据已删除。", "모든 데이터가 삭제되었습니다.", "すべてのデータを削除しました。"],
 type_free:['Free chat','Conversa livre','Conversación libre','Conversation libre','Freies Gespräch','自由对话','자유 대화','フリー会話'],
 type_scenario:['Scenario','Cenário','Escenario','Scénario','Szenario','情景','시나리오','シナリオ'],
 type_level:['Level test','Teste de nível','Prueba de nivel','Test de niveau','Einstufungstest','水平测试','레벨 테스트','レベルテスト']
@@ -291,10 +297,21 @@ const LI=Object.fromEntries(CODES.map((c,i)=>[c,i]));
 /* ===== HELPERS / SETTINGS ===== */
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const DEF={key:'',model:'gemini-3.6-flash',temp:0.7,ui:'en',native:'en',targets:['es'],active:'es',level:'A2',goal:'',corr:'each',daily:15,voices:{},rate:1,autoRead:true,showRead:true,showTrans:true,autoSend:true,speakMode:'target',hf:false,levelEst:null,sessCount:0,welcomed:false};
+const DEF={key:'',model:'gemini-3.6-flash',temp:0.7,ui:'en',native:'en',targets:['es'],active:'es',corr:'each',voices:{},rate:1,autoRead:true,showRead:true,showTrans:true,autoSend:true,speakMode:'target',hf:false,welcomed:false};
 let S=Object.assign({},DEF);
 try{Object.assign(S,JSON.parse(localStorage.getItem('pl_settings')||'{}'))}catch(e){}
 const saveS=()=>{try{localStorage.setItem('pl_settings',JSON.stringify(S))}catch(e){}};
+/* per-language learning profile: level, goal, daily goal, level estimate, session count */
+const PDEF={level:'A2',goal:'',daily:15,levelEst:null,sessCount:0};
+function P(lang){lang=lang||S.active;if(!S.prof)S.prof={};if(!S.prof[lang])S.prof[lang]=Object.assign({},PDEF);return S.prof[lang]}
+function migrateSettings(){
+ const old={};['level','goal','daily','levelEst','sessCount'].forEach(k=>{if(k in S){old[k]=S[k];delete S[k]}});
+ if(!Object.keys(old).length)return;
+ [...new Set([...(S.targets||[]),S.active])].forEach(l=>{const p=P(l);['level','goal','daily'].forEach(k=>{if(old[k]!==undefined)p[k]=old[k]});
+  if(old.levelEst&&old.levelEst.lang===l)p.levelEst=old.levelEst;if(l===S.active&&old.sessCount)p.sessCount=old.sessCount});
+ saveS();
+}
+migrateSettings();
 const t=k=>{const a=I[k];if(!a)return k;return a[LI[S.ui]]||a[0]};
 function toast(m,ms=2600){const e=$('toast');e.textContent=m;e.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display='none',ms)}
 function applyI18n(){
@@ -346,8 +363,19 @@ function calcStreak(act,today=todayISO()){
  return n;
 }
 async function addSecs(secs){
- const d=todayISO();const a=(await dbGet('activity',d))||{id:d,secs:0};a.secs+=secs;await dbPut('activity',a);
- if(curSid){const s=await dbGet('sessions',curSid);if(s){s.duration=(s.duration||0)+secs;await dbPut('sessions',s)}}
+ let lang=S.active,s=null;
+ if(curSid&&screen==='chat'){s=await dbGet('sessions',curSid);if(s)lang=s.lang}
+ const date=todayISO(),id=lang+'|'+date;
+ const a=(await dbGet('activity',id))||{id,lang,date,secs:0};a.secs+=secs;await dbPut('activity',a);
+ if(s){s.duration=(s.duration||0)+secs;await dbPut('sessions',s)}
+}
+/* old data (before per-language profiles) is attached to the active language */
+async function migrateDB(){
+ for(const a of await dbAll('activity'))if(!String(a.id).includes('|')){
+  await dbDel('activity',a.id);const id=S.active+'|'+a.id,o=await dbGet('activity',id);
+  if(o)o.secs+=a.secs;await dbPut('activity',o||{id,lang:S.active,date:a.id,secs:a.secs});
+ }
+ for(const m of await dbAll('memory'))if(!m.lang){m.lang=S.active;await dbPut('memory',m)}
 }
 /* ===== DICTATION DIFF ===== */
 const normTxt=s=>String(s||'').toLowerCase().replace(/[\p{P}\p{S}]/gu,' ').replace(/\s+/g,' ').trim();
@@ -450,10 +478,10 @@ async function geminiJSON(contents,o={}){
 
 /* ===== PROMPTS ===== */
 const nameOf=c=>LANGS[c].name;
-async function memoryText(){const m=await dbAll('memory');return m.length?m.map(x=>'- '+x.text).join('\n'):'(none)'}
+async function memoryText(lang){const m=(await dbAll('memory')).filter(x=>x.lang===(lang||S.active));return m.length?m.map(x=>'- '+x.text).join('\n'):'(none)'}
 const SCHEMA=`{"segments":[{"lang":"es","text":"","role":"reply|example|explanation|correction","reading":"","translation":""}],"corrections":[{"original":"","corrected":"","explanation":"","category":"grammar|vocabulary|spelling|word-order|tense|particles|other"}],"new_vocab":[{"term":"","lang":"","reading":"","translation":"","example":""}],"exercise":null}`;
 async function sysPrompt(sess){
- const T=S.active,N=S.native;
+ const T=sess.lang||S.active,N=S.native,pf=P(T);
  const corr={each:'After each student message, put every real mistake in "corrections" (explanations in '+nameOf(N)+'), and keep the reply itself natural. If there is no mistake, use an empty list.',end:'Do NOT correct during the conversation: always return an empty "corrections" list (corrections are given at the end of the session).',off:'Never correct: always return an empty "corrections" list.'}[S.corr];
  let mode={
   free:'Free conversation. Reply in '+nameOf(T)+' with 2 to 4 short sentences at the student\'s level, then ask a simple follow-up question.',
@@ -461,13 +489,13 @@ async function sysPrompt(sess){
   level:'Level test. Ask ONE question at a time in '+nameOf(T)+', starting easy and getting harder (A1 to C2) depending on the answers. Do not correct or teach during the test. After about 8 questions, give "level_estimate":{"level":"A1|A2|B1|B2|C1|C2","comment":"short rationale in '+nameOf(N)+'"} and set "session_complete": true; until then omit level_estimate.'
  }[sess.mode]||'';
  return `You are a friendly, patient language teacher inside a mobile app with voice.
-Student native language: ${nameOf(N)} (${N}). Target language: ${nameOf(T)} (${T}). Student level: ${S.level}. Goal: ${S.goal||'general'}.
+Student native language: ${nameOf(N)} (${N}). Target language: ${nameOf(T)} (${T}). Student level: ${pf.level}. Goal: ${pf.goal||'general'}.
 LANGUAGE RULES: replies (role "reply") are in ${nameOf(T)}. ALL explanations, corrections, translations, objectives and comments are in ${nameOf(N)}. Never mix languages inside one segment; split text into segments and give each its own "lang" code (one of ${CODES.join(', ')}). Segment text is spoken aloud: plain text only, no markdown, no emojis, no brackets with other languages.
 Every segment in ${nameOf(T)} needs "translation" in ${nameOf(N)}.${ASIAN.includes(T)?` Also fill "reading" (${READING[T]}) for ${nameOf(T)} segments.`:' Leave "reading" empty.'}
 ${corr}
 Add useful words/phrases the student should learn to "new_vocab" (max 4 per turn, "lang" = ${T}, with translation in ${nameOf(N)}).
 Adjust difficulty to the level. "exercise" is normally null.
-Student memory:\n${await memoryText()}
+Student memory:\n${await memoryText(T)}
 MODE: ${mode}
 OUTPUT: respond ONLY with one JSON object, exactly this shape (extra keys allowed only as described): ${SCHEMA}`;
 }
@@ -479,7 +507,7 @@ async function newSession(mode='free',scenario=''){
  curSid=id;go('chat');await renderChat();
  await send('[START] Begin the session now.',true);
 }
-async function loadSession(id){curSid=id;go('chat');await renderChat()}
+async function loadSession(id){curSid=id;const s=await dbGet('sessions',id);if(s){S.active=s.lang;if(!S.targets.includes(s.lang))S.targets.push(s.lang);saveS()}go('chat');await renderChat()}
 async function msgsOf(sid){return(await dbAll('messages')).filter(m=>m.sid===sid).sort((a,b)=>a.id-b.id)}
 async function renderChat(){
  const box=$('msgs');box.innerHTML='';$('chk').innerHTML='';
@@ -551,7 +579,7 @@ async function afterTurn(sess,data){
  await dbPut('sessions',sess);renderChecklist(sess);
  for(const c of data.corrections||[])if(c&&c.corrected&&S.corr!=='off')await dbPut('errors',{lang:sess.lang,category:c.category||'other',original:c.original||'',corrected:c.corrected,explanation:c.explanation||'',ts:Date.now()});
  for(const v of data.new_vocab||[])if(v&&v.term)await addVocab(lc2(v.lang)||sess.lang,v.term,v);
- if(data.level_estimate&&data.level_estimate.level){S.levelEst={level:data.level_estimate.level,note:data.level_estimate.comment||'',date:todayISO(),lang:sess.lang};saveS()}
+ if(data.level_estimate&&data.level_estimate.level){P(sess.lang).levelEst={level:data.level_estimate.level,note:data.level_estimate.comment||'',date:todayISO(),lang:sess.lang};saveS()}
 }
 function startMic(auto=false){
  const el=$('inp');
@@ -603,13 +631,13 @@ function go(name){
 
 /* ===== HOME ===== */
 async function renderHome(){
- const el=$('s-home'),act=await dbGet('activity',todayISO()),mins=Math.floor(((act&&act.secs)||0)/60);
+ const el=$('s-home'),act=await dbGet('activity',S.active+'|'+todayISO()),mins=Math.floor(((act&&act.secs)||0)/60);
  const due=(await dbAll('vocab')).filter(v=>v.lang===S.active&&v.due<=todayISO()).length;
  const last=(await dbAll('sessions')).filter(s=>s.lang===S.active).sort((a,b)=>b.updated-a.updated)[0];
  el.innerHTML=`<h2>${esc(t('practice'))}</h2>
  <div class="card"><label style="margin-top:0">${esc(t('studying'))}</label><select id="h-lang">${langOpts(S.active,S.targets)}</select>
- <div class="row" style="margin-top:12px;justify-content:space-between"><span>${esc(t('goalToday'))}</span><b>${mins} / ${S.daily} ${esc(t('min'))}</b></div>
- <div class="bar" style="margin-top:6px"><i style="width:${Math.min(100,mins/S.daily*100)}%"></i></div></div>
+ <div class="row" style="margin-top:12px;justify-content:space-between"><span>${esc(t('goalToday'))}</span><b>${mins} / ${P().daily} ${esc(t('min'))}</b></div>
+ <div class="bar" style="margin-top:6px"><i style="width:${Math.min(100,mins/P().daily*100)}%"></i></div></div>
  ${last?`<button class="sec" id="h-resume" style="width:100%;margin-bottom:12px;text-align:left">▶ ${esc(t('resume'))}: ${esc(last.title)}</button>`:''}
  <div class="grid">
   <button class="mode" data-m="free"><span class="ic">💬</span>${esc(t('mFree'))}</button>
@@ -655,7 +683,7 @@ function renderLesson(){
   const out=$('l-out');out.innerHTML=`<div class="mut">${esc(t('thinking'))}</div>`;$('l-go').disabled=true;
   try{
    const T=S.active,N=S.native;
-   const sys=`You are a language teacher. Student native language: ${nameOf(N)}. Target: ${nameOf(T)}. Level ${S.level}. Write explanations, translations and exercise prompts in ${nameOf(N)}; target-language content in ${nameOf(T)}. Plain text only.`;
+   const sys=`You are a language teacher. Student native language: ${nameOf(N)}. Target: ${nameOf(T)}. Level ${P(T).level}. Write explanations, translations and exercise prompts in ${nameOf(N)}; target-language content in ${nameOf(T)}. Plain text only.`;
    const p=`Create a mini-lesson on: "${topic}". Return ONLY JSON: {"title":"","explanation":"max 120 words in ${nameOf(N)}","examples":[5 items {"text":"${nameOf(T)}","reading":"${ASIAN.includes(T)?READING[T]:''}","translation":"${nameOf(N)}"}],"exercises":[3 to 5 items {"type":"mc|fill|translate|order","prompt":"","options":[],"answer":"","explanation":""}]}. Rules: mc has 3-4 options and answer equals one option exactly; fill prompt contains ___ and answer is the missing text in ${nameOf(T)}; translate prompt is a ${nameOf(N)} sentence and answer is its ${nameOf(T)} translation; order prompt is a ${nameOf(N)} sentence, options are the ${nameOf(T)} words/chunks shuffled, answer is the full correct ${nameOf(T)} sentence. Mix types.`;
    const r=await geminiJSON(p,{system:sys});const L=r.json;
    if(!L||!Array.isArray(L.exercises))throw new Error('Invalid lesson JSON');
@@ -696,7 +724,7 @@ function renderDictation(){
   $('d-new').disabled=true;$('d-res').innerHTML='';
   try{
    const T=S.active,N=S.native;
-   const r=await geminiJSON(`Write ONE natural sentence (6-14 words) in ${nameOf(T)} for a ${S.level} learner${S.goal?` interested in: ${S.goal}`:''}. Random topic #${Math.floor(Math.random()*1e6)}. Return ONLY JSON {"text":"","reading":"${ASIAN.includes(T)?READING[T]:''}","translation":"in ${nameOf(N)}"}`,{temp:1});
+   const r=await geminiJSON(`Write ONE natural sentence (6-14 words) in ${nameOf(T)} for a ${P(T).level} learner${P(T).goal?` interested in: ${P(T).goal}`:''}. Random topic #${Math.floor(Math.random()*1e6)}. Return ONLY JSON {"text":"","reading":"${ASIAN.includes(T)?READING[T]:''}","translation":"in ${nameOf(N)}"}`,{temp:1});
    if(!r.json||!r.json.text)throw new Error('Invalid JSON');
    dict=r.json;$('d-inp').value='';
    ['d-play','d-act'].forEach(i=>$(i).style.display='flex');$('d-inp').style.display='block';
@@ -751,17 +779,17 @@ function showCard(el){
 
 /* ===== PROGRESS ===== */
 async function renderProgress(){
- const el=$('s-progress'),act=await dbAll('activity'),voc=(await dbAll('vocab')).filter(v=>v.lang===S.active);
+ const el=$('s-progress'),act=(await dbAll('activity')).filter(a=>a.lang===S.active).map(a=>({id:a.date,secs:a.secs})),voc=(await dbAll('vocab')).filter(v=>v.lang===S.active);
  const errs=(await dbAll('errors')).filter(e=>e.lang===S.active),les=(await dbAll('lessons')).filter(l=>l.lang===S.active).sort((a,b)=>b.ts-a.ts).slice(0,10);
  const st={new:0,learning:0,mastered:0};voc.forEach(v=>st[vStage(v)]++);
  const m={};act.forEach(a=>m[a.id]=a.secs||0);
  const days=[...Array(7)].map((_,i)=>addDays(todayISO(),i-6)),vals=days.map(d=>Math.round((m[d]||0)/60)),mx=Math.max(1,...vals);
  const cat={};errs.forEach(e=>{(cat[e.category]=cat[e.category]||[]).push(e)});
  const top=Object.entries(cat).sort((a,b)=>b[1].length-a[1].length).slice(0,5);
- const le=S.levelEst;
+ const le=P().levelEst;
  el.innerHTML=`<h2>📈 ${esc(t('progress'))} · ${esc(LANGS[S.active].native)}</h2>
  <div class="stats"><div class="card"><div class="big2">🔥${calcStreak(act)}</div><div class="mut">${esc(t('streak'))}</div></div>
- <div class="card"><div class="big2">${vals[6]}</div><div class="mut">${esc(t('min'))} · ${esc(t('goalToday'))} ${S.daily}</div></div>
+ <div class="card"><div class="big2">${vals[6]}</div><div class="mut">${esc(t('min'))} · ${esc(t('goalToday'))} ${P().daily}</div></div>
  <div class="card"><div class="big2">${voc.length}</div><div class="mut">${esc(t('words'))}</div></div></div>
  <div class="card"><b>${esc(t('weekTime'))}</b><div class="wk" style="margin-top:8px">${vals.map((v,i)=>`<div><i style="height:${v/mx*80}px"></i>${v}<br>${days[i].slice(5)}</div>`).join('')}</div></div>
  <div class="card"><b>${esc(t('words'))}</b><div class="row" style="margin-top:8px"><span class="chip">${esc(t('wNew'))}: ${st.new}</span><span class="chip">${esc(t('wLearning'))}: ${st.learning}</span><span class="chip">${esc(t('wMastered'))}: ${st.mastered}</span></div></div>
@@ -771,12 +799,14 @@ async function renderProgress(){
  <div class="card"><b>${esc(t('lessonHist'))}</b>${les.length?les.map(l=>`<div class="mut" style="margin-top:6px">${new Date(l.ts).toLocaleDateString()} · ${esc(l.topic)} · ${l.score}/${l.total}</div>`).join(''):`<div class="mut">${esc(t('noData'))}</div>`}</div>`;
  $('p-ass').onclick=async()=>{if(needKey())return;$('p-ass').disabled=true;try{await assessLevel();toast(t('saved'))}catch(e){toast(t('error')+e.message,5000)}renderProgress()};
 }
-async function assessLevel(){
- const voc=(await dbAll('vocab')).filter(v=>v.lang===S.active),errs=(await dbAll('errors')).filter(e=>e.lang===S.active).slice(-30);
- const sum={target:nameOf(S.active),statedLevel:S.level,words:voc.length,mastered:voc.filter(v=>vStage(v)==='mastered').length,recentMistakes:errs.map(e=>({cat:e.category,original:e.original,corrected:e.corrected})),sampleWords:voc.slice(-25).map(v=>v.term)};
- const r=await geminiJSON(`Estimate the student's CEFR level in ${nameOf(S.active)} from this data. Be conservative. Return ONLY JSON {"level":"A1|A2|B1|B2|C1|C2","comment":"1-2 sentences in ${nameOf(S.native)}"}\n${JSON.stringify(sum)}`,{temp:0.3});
+async function assessLevel(lang){
+ lang=lang||S.active;
+ const voc=(await dbAll('vocab')).filter(v=>v.lang===lang),errs=(await dbAll('errors')).filter(e=>e.lang===lang).slice(-30);
+ const sum={target:nameOf(lang),statedLevel:P(lang).level,words:voc.length,mastered:voc.filter(v=>vStage(v)==='mastered').length,recentMistakes:errs.map(e=>({cat:e.category,original:e.original,corrected:e.corrected})),sampleWords:voc.slice(-25).map(v=>v.term)};
+ const r=await geminiJSON(`Estimate the student's CEFR level in ${nameOf(lang)} from this data. Be conservative. Return ONLY JSON {"level":"A1|A2|B1|B2|C1|C2","comment":"1-2 sentences in ${nameOf(S.native)}"}
+${JSON.stringify(sum)}`,{temp:0.3});
  if(!r.json||!r.json.level)throw new Error('Invalid JSON');
- S.levelEst={level:r.json.level,note:r.json.comment||'',date:todayISO(),lang:S.active};saveS();
+ P(lang).levelEst={level:r.json.level,note:r.json.comment||'',date:todayISO(),lang};saveS();
 }
 
 /* ===== SESSIONS LIST / END ===== */
@@ -799,10 +829,10 @@ async function endSession(){
  let r=null;
  try{
   const tr=ms.map(m=>(m.role==='user'?'STUDENT: ':'TEACHER: ')+m.text).join('\n');
-  const o=await geminiJSON(`Review this ${nameOf(s.lang)} lesson transcript for a ${S.level} student. Write everything except student sentences in ${nameOf(S.native)}. Return ONLY JSON {"summary":"2-3 sentences","corrections":${S.corr==='end'?'[{"original":"","corrected":"","explanation":"","category":"grammar|vocabulary|spelling|word-order|tense|particles|other"}] (real mistakes in STUDENT lines)':'[]'},"new_vocab":[{"term":"","lang":"${s.lang}","reading":"","translation":"","example":""}] (max 5),"memory_proposals":["short fact about the student: interests, goals, recurring mistakes, correction preference (max 3)"]}\nCurrent memory:\n${await memoryText()}\n\n${tr}`,{temp:0.3});
+  const o=await geminiJSON(`Review this ${nameOf(s.lang)} lesson transcript for a ${P(s.lang).level} student. Write everything except student sentences in ${nameOf(S.native)}. Return ONLY JSON {"summary":"2-3 sentences","corrections":${S.corr==='end'?'[{"original":"","corrected":"","explanation":"","category":"grammar|vocabulary|spelling|word-order|tense|particles|other"}] (real mistakes in STUDENT lines)':'[]'},"new_vocab":[{"term":"","lang":"${s.lang}","reading":"","translation":"","example":""}] (max 5),"memory_proposals":["short fact about the student: interests, goals, recurring mistakes, correction preference (max 3)"]}\nCurrent memory:\n${await memoryText(s.lang)}\n\n${tr}`,{temp:0.3});
   r=o.json;
  }catch(e){toast(t('error')+e.message,4000)}
- s.ended=true;await dbPut('sessions',s);S.sessCount++;saveS();
+ s.ended=true;await dbPut('sessions',s);const pf=P(s.lang);pf.sessCount=(pf.sessCount||0)+1;saveS();
  if(r){
   if(S.corr==='end')for(const c of r.corrections||[])if(c&&c.corrected)await dbPut('errors',{lang:s.lang,category:c.category||'other',original:c.original||'',corrected:c.corrected,explanation:c.explanation||'',ts:Date.now()});
   for(const v of r.new_vocab||[])if(v&&v.term)await addVocab(s.lang,v.term,v);
@@ -812,25 +842,26 @@ async function endSession(){
    +(props.length?`<h3>${esc(t('memProposals'))}</h3>`+props.map((p,i)=>`<label class="sw" style="margin:0"><span>${esc(p)}</span><input type="checkbox" data-p="${i}" checked></label>`).join(''):'')
    +`<div class="row" style="margin-top:12px"><button id="m-ok" style="flex:1">${esc(props.length?t('saveSel'):t('close'))}</button></div>`);
   h.querySelector('#m-ok').onclick=async()=>{
-   for(const cb of h.querySelectorAll('[data-p]'))if(cb.checked)await addMemory(props[+cb.dataset.p]);
+   for(const cb of h.querySelectorAll('[data-p]'))if(cb.checked)await addMemory(props[+cb.dataset.p],s.lang);
    closeModal();
   };
  }
- if(S.sessCount%5===0&&S.key)assessLevel().catch(()=>{});
+ if(pf.sessCount%5===0&&S.key)assessLevel(s.lang).catch(()=>{});
  curSid=null;go('home');
 }
-async function addMemory(text){
- text=String(text||'').trim();if(!text)return;
- let all=(await dbAll('memory')).sort((a,b)=>a.id-b.id);
+async function addMemory(text,lang){
+ text=String(text||'').trim();lang=lang||S.active;if(!text)return;
+ const mine=async()=>(await dbAll('memory')).filter(m=>m.lang===lang).sort((a,b)=>a.id-b.id);
+ let all=await mine();
  if(all.some(m=>m.text.toLowerCase()===text.toLowerCase()))return;
- await dbPut('memory',{text:text.slice(0,200),ts:Date.now()});
- all=(await dbAll('memory')).sort((a,b)=>a.id-b.id);
+ await dbPut('memory',{lang,text:text.slice(0,200),ts:Date.now()});
+ all=await mine();
  while(all.length>20){await dbDel('memory',all.shift().id)}
 }
 
 /* ===== SETTINGS ===== */
 async function renderSettings(){
- const el=$('s-settings'),mem=(await dbAll('memory')).sort((a,b)=>a.id-b.id);
+ const el=$('s-settings'),mem=(await dbAll('memory')).filter(m=>m.lang===S.active).sort((a,b)=>a.id-b.id);
  const vl=[...new Set([S.native,...S.targets])];
  el.innerHTML=`<h2>⚙️ ${esc(t('settings'))}</h2>
  ${S.welcomed?'':`<div class="card" style="border-color:var(--warn)">${esc(t('welcome'))}</div>`}
@@ -838,29 +869,33 @@ async function renderSettings(){
  <label>${esc(t('setNative'))}</label><select data-k="native">${langOpts(S.native)}</select>
  <label>${esc(t('setTargets'))}</label><div>${CODES.map(c=>`<label class="sw" style="margin:0"><span>${esc(LANGS[c].native)}</span><input type="checkbox" data-tg="${c}"${S.targets.includes(c)?' checked':''}></label>`).join('')}</div>
  <label>${esc(t('setActive'))}</label><select data-k="active">${langOpts(S.active,S.targets)}</select>
- <label>${esc(t('setLevel'))}</label><select data-k="level">${Object.keys(EQUIV).map(l=>`<option${l===S.level?' selected':''}>${l}</option>`).join('')}</select>
- <label>${esc(t('setGoal'))}</label><input data-k="goal" value="${esc(S.goal)}" maxlength="120">
  <label>${esc(t('setCorr'))}</label><select data-k="corr">${[['each','corrEach'],['end','corrEnd'],['off','corrOff']].map(([v,k])=>`<option value="${v}"${S.corr===v?' selected':''}>${esc(t(k))}</option>`).join('')}</select>
- <label>${esc(t('setDaily'))}</label><input type="number" min="1" max="240" data-k="daily" value="${S.daily}"></div>
+ </div>
+ <div class="card" style="border-color:var(--ac)"><b>${esc(t('setProfile'))}: ${esc(LANGS[S.active].native)}</b>
+ <label>${esc(t('setLevel'))}</label><select data-pk="level">${Object.keys(EQUIV).map(l=>`<option${l===P().level?' selected':''}>${l}</option>`).join('')}</select>
+ <label>${esc(t('setGoal'))}</label><input data-pk="goal" value="${esc(P().goal)}" maxlength="120">
+ <label>${esc(t('setDaily'))}</label><input type="number" min="1" max="240" data-pk="daily" value="${P().daily}"></div>
  <div class="card"><label style="margin-top:0">${esc(t('setApi'))}</label><input type="password" data-k="key" value="${esc(S.key)}" autocomplete="off" placeholder="AIza…"><div class="mut" style="margin-top:4px">${esc(t('apiHelp'))}</div>
  <label>${esc(t('setModel'))}</label><select data-k="model">${['gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.8-flash'].map(m=>`<option${m===S.model?' selected':''}>${m}</option>`).join('')}</select>
  <label>${esc(t('setTemp'))}: <span id="tv">${S.temp}</span></label><input type="range" min="0" max="1.5" step="0.1" data-k="temp" value="${S.temp}"></div>
  <div class="card"><label style="margin-top:0">${esc(t('setRate'))}: <span id="rv">${S.rate}x</span></label><input type="range" min="0.5" max="2" step="0.1" data-k="rate" value="${S.rate}">
  ${vl.map(c=>`<label>${esc(t('setVoice'))} · ${esc(LANGS[c].native)}</label><select data-v="${c}"><option value="">${esc(t('defVoice'))}</option>${voicesFor(c).map(v=>`<option value="${esc(v.name)}"${S.voices[c]===v.name?' selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select>`).join('')}
  ${[['autoRead','setAutoRead'],['showRead','setReading'],['showTrans','setTrans'],['autoSend','setAutoSend']].map(([k,l])=>`<label class="sw"><span>${esc(t(l))}</span><input type="checkbox" data-b="${k}"${S[k]?' checked':''}></label>`).join('')}</div>
- <div class="card"><b>${esc(t('memTitle'))}</b><div id="mem" style="margin-top:8px">${mem.map(m=>`<label class="li"><input type="checkbox" data-mid="${m.id}" style="width:auto"><span class="gr">${esc(m.text)}</span></label>`).join('')}</div>
+ <div class="card"><b>${esc(t('memTitle'))} · ${esc(LANGS[S.active].native)}</b><div id="mem" style="margin-top:8px">${mem.map(m=>`<label class="li"><input type="checkbox" data-mid="${m.id}" style="width:auto"><span class="gr">${esc(m.text)}</span></label>`).join('')}</div>
  <div class="row"><input id="mem-new" placeholder="${esc(t('memHint'))}" style="flex:1" maxlength="200"><button id="mem-add">${esc(t('memAdd'))}</button></div>
  <div class="row" style="margin-top:8px"><button class="sec sm" id="mem-ds">${esc(t('delSel'))}</button><button class="danger sm" id="mem-da">${esc(t('delAll'))}</button></div></div>
  <div class="card"><button class="sec" id="x-exp" style="width:100%">${esc(t('expAll'))}</button><div class="mut" style="margin:4px 0 10px">${esc(t('expNote'))}</div>
  <button class="sec" id="x-imp" style="width:100%">${esc(t('impAll'))}</button><input type="file" id="x-file" accept="application/json" style="display:none"></div>
+ <div class="card" style="border-color:var(--bad)"><button class="danger" id="s-wipe" style="width:100%">🗑 ${esc(t('delData'))}</button></div>
  <div class="card"><button class="ok" id="s-inst" style="width:100%;display:none;margin-bottom:8px"></button><button class="sec" id="s-unin" style="width:100%">${esc(t('uninstallHow'))}</button></div>`;
  el.querySelectorAll('[data-k]').forEach(i=>i.onchange=i.oninput=()=>{
   const k=i.dataset.k;let v=i.value;if(i.type==='number'||i.type==='range')v=parseFloat(v)||DEF[k];
   S[k]=v;if(k==='temp')$('tv').textContent=v;if(k==='rate')$('rv').textContent=v+'x';
   if(k==='key'&&v)S.welcomed=true;saveS();
-  if(i.tagName==='SELECT'&&(k==='ui'||k==='native')){if(k==='ui')applyI18n();renderSettings()}
+  if(i.tagName==='SELECT'&&(k==='ui'||k==='native'||k==='active')){if(k==='ui')applyI18n();renderSettings()}
   if(k==='active'||k==='level'){}
  });
+ el.querySelectorAll('[data-pk]').forEach(i=>i.onchange=i.oninput=()=>{const k=i.dataset.pk;let v=i.value;if(k==='daily')v=Math.max(1,parseInt(v)||15);P()[k]=v;saveS()});
  el.querySelectorAll('[data-tg]').forEach(i=>i.onchange=()=>{
   const c=i.dataset.tg;S.targets=i.checked?[...new Set([...S.targets,c])]:S.targets.filter(x=>x!==c);
   if(!S.targets.length){S.targets=[c];i.checked=true}
@@ -868,12 +903,12 @@ async function renderSettings(){
  });
  el.querySelectorAll('[data-v]').forEach(i=>i.onchange=()=>{S.voices[i.dataset.v]=i.value;saveS()});
  el.querySelectorAll('[data-b]').forEach(i=>i.onchange=()=>{S[i.dataset.b]=i.checked;saveS()});
- $('mem-add').onclick=async()=>{await addMemory($('mem-new').value);renderSettings()};
+ $('mem-add').onclick=async()=>{await addMemory($('mem-new').value,S.active);renderSettings()};
  const sel=()=>[...el.querySelectorAll('[data-mid]:checked')].map(i=>+i.dataset.mid);
  $('mem-ds').onclick=async()=>{for(const id of sel())await dbDel('memory',id);renderSettings()};
- $('mem-da').onclick=async()=>{if(confirm(t('confirm'))){await dbClear('memory');renderSettings()}};
+ $('mem-da').onclick=async()=>{if(confirm(t('confirm'))){for(const m of mem)await dbDel('memory',m.id);renderSettings()}};
  $('x-exp').onclick=exportAll;$('x-imp').onclick=()=>$('x-file').click();$('x-file').onchange=e=>importAll(e.target.files[0]);
- $('s-unin').onclick=showUninstall;
+ $('s-unin').onclick=showUninstall;$('s-wipe').onclick=wipeAll;
  syncInstallBtns();
 }
 async function exportAll(){
@@ -888,8 +923,23 @@ async function importAll(f){
   const d=JSON.parse(await f.text());if(d.app!=='polyglot-ai')throw new Error('Invalid file');
   if(!confirm(t('confirm')))return;
   for(const s of STORES){await dbClear(s);for(const o of d[s]||[])await dbPut(s,o)}
-  const key=S.key;S=Object.assign({},DEF,d.settings||{},{key});saveS();applyI18n();toast(t('imported'));curSid=null;go('settings');
+  const key=S.key;S=Object.assign(JSON.parse(JSON.stringify(DEF)),d.settings||{},{key});migrateSettings();saveS();await migrateDB();applyI18n();toast(t('imported'));curSid=null;go('settings');
  }catch(e){toast(t('error')+e.message,5000)}
+}
+
+/* ===== DELETE ALL DATA ===== */
+function wipeAll(){
+ const h=modal(`<h2>⚠️ ${esc(t('delData'))}</h2><p style="line-height:1.5">${esc(t('delDataWarn'))}</p><label class="sw"><span>${esc(t('keepKeyChk'))}</span><input type="checkbox" id="w-key" checked></label><div class="row" style="margin-top:12px"><button class="sec" id="w-no" style="flex:1">${esc(t('cancel'))}</button><button class="danger" id="w-yes" style="flex:1">${esc(t('delEverything'))}</button></div>`);
+ h.querySelector('#w-no').onclick=closeModal;
+ h.querySelector('#w-yes').onclick=async()=>{
+  const keep=h.querySelector('#w-key').checked,key=S.key;
+  stopSpeak();stopListen();
+  for(const st of STORES)await dbClear(st);
+  S=JSON.parse(JSON.stringify(DEF));if(keep)S.key=key;
+  try{localStorage.removeItem('pl_settings')}catch(e){}
+  saveS();curSid=null;closeModal();toast(t('deleted'));
+  setTimeout(()=>{try{location.reload()}catch(e){}},700);
+ };
 }
 
 /* ===== PWA INSTALL ===== */
@@ -921,12 +971,12 @@ function bind(){
  setInterval(()=>{if(document.visibilityState==='visible'&&(screen==='chat'&&curSid||screen==='review'||screen==='tool'))addSecs(10)},10000);
 }
 async function init(){
- await openDB();bind();applyI18n();
+ await openDB();bind();applyI18n();await migrateDB();
  if(!S.targets.includes(S.active))S.active=S.targets[0];
  go(S.key?'home':'settings');
  if(!S.key)toast(t('welcome'),5000);
 }
-window.PL={init,srsReview,newVocab,calcStreak,diffTokens,tokens,extractJSON,exportAll,importAll,addVocab,dbAll,dbPut,vStage,addDays,get S(){return S}};
+window.PL={P,migrateDB,migrateSettings,addMemory,addSecs,memoryText,wipeAll,init,srsReview,newVocab,calcStreak,diffTokens,tokens,extractJSON,exportAll,importAll,addVocab,dbAll,dbPut,vStage,addDays,get S(){return S}};
 if(!window.__PL_TEST)init();
 </script>
 </body>
