@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="notranslate">
+<head>
+<meta charset="UTF-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Polyglot AI – Language Teacher</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1020">
+<meta name="description" content="AI language teacher with voice: conversation, lessons, review and progress tracking.">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0b1020;--sf:#141b30;--sf2:#1c2540;--bd:#2a3556;--tx:#e6ebf7;--mut:#8f9bb8;--ac:#3b82f6;--ac2:#2563eb;--ok:#22c55e;--bad:#ef4444;--warn:#facc15;--nav:62px}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans CJK SC","Noto Sans JP","Noto Sans KR",sans-serif;font-size:16px}
+body{display:flex;flex-direction:column;overflow:hidden;padding-top:env(safe-area-inset-top)}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf);border-bottom:1px solid var(--bd)}
+header img{width:30px;height:30px;border-radius:8px}
+header h1{font-size:18px;flex:1;font-weight:700}
+main{flex:1;min-height:0;position:relative}
+.screen{display:none;position:absolute;inset:0;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
+.screen.active{display:block}
+#s-chat.active{display:flex;flex-direction:column;padding:0}
+nav{display:flex;height:calc(var(--nav) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--sf);border-top:1px solid var(--bd)}
+nav button{flex:1;background:none;border:none;color:var(--mut);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+nav button span.ic{font-size:21px}
+nav button.on{color:var(--ac)}
+h2{font-size:20px;margin-bottom:10px}
+h3{font-size:14px;color:var(--mut);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+button,select,input,textarea{font:inherit;color:var(--tx);border-radius:10px;border:1px solid var(--bd);background:var(--sf2);padding:10px 12px;outline:none}
+input,select,textarea{width:100%}
+textarea{resize:none}
+button{cursor:pointer;background:var(--ac);border:none;font-weight:600}
+button:active{background:var(--ac2)}
+button:disabled{opacity:.45}
+button.sec{background:var(--sf2);border:1px solid var(--bd)}
+button.danger{background:var(--bad)}
+button.ok{background:var(--ok);color:#052e12}
+button.sm{padding:6px 10px;font-size:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;background:var(--sf);border:1px solid var(--bd);border-radius:14px;font-weight:600;font-size:15px;color:var(--tx)}
+.mode .ic{font-size:28px}
+.bar{height:10px;background:var(--sf2);border-radius:6px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--ok))}
+.mut{color:var(--mut);font-size:14px}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0}
+.sw input{width:auto;transform:scale(1.3)}
+#msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.bub{max-width:92%;padding:10px 13px;border-radius:14px;line-height:1.5;word-wrap:break-word}
+.bub.user{align-self:flex-end;background:var(--ac2);border-bottom-right-radius:4px;white-space:pre-wrap}
+.bub.ai{align-self:flex-start;background:var(--sf2);border-bottom-left-radius:4px}
+.bub.note{align-self:center;background:none;color:var(--mut);font-size:14px;text-align:center}
+.seg{padding:4px 0}
+.seg+.seg{border-top:1px dashed var(--bd);margin-top:4px}
+.seg .tx{font-size:18px}
+.seg.explanation .tx,.seg.correction .tx{font-size:15px;color:#c9d3ee}
+.seg .rd{color:var(--warn);font-size:14px}
+.seg .tr{color:var(--mut);font-size:14px}
+.seg .ctl{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
+.ctl button{padding:2px 8px;font-size:14px;background:var(--bd)}
+.corr{margin-top:8px;padding:8px;border-left:3px solid var(--warn);background:#2a2a1a;border-radius:6px;font-size:14px}
+.corr s{color:var(--bad)}.corr b{color:var(--ok)}
+.chip{display:inline-block;padding:3px 9px;border-radius:12px;background:var(--bd);font-size:13px;margin:2px 4px 2px 0}
+.chk{font-size:14px;margin:4px 0}.chk.d{color:var(--ok)}
+#inbar{padding:8px 10px;background:var(--sf);border-top:1px solid var(--bd)}
+#inbar .tools{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+#inbar .box{display:flex;gap:8px;align-items:flex-end}
+#inbar textarea{flex:1;min-height:44px;max-height:120px}
+#mic{width:58px;height:58px;border-radius:50%;font-size:26px;padding:0;flex:none}
+#mic.on{background:var(--bad);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(239,68,68,.25)}}
+#send{height:44px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;overflow-y:auto;padding:20px}
+.modal>div{background:var(--sf);border:1px solid var(--bd);border-radius:16px;max-width:520px;margin:20px auto;padding:18px}
+.li{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:6px;background:var(--sf2)}
+.li .gr{flex:1}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:20px;z-index:80;display:none;max-width:90%;text-align:center;font-size:14px}
+.fc{min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.fc .big{font-size:28px;font-weight:700}
+.opt{display:block;width:100%;text-align:left;margin-bottom:6px;background:var(--sf2);border:1px solid var(--bd)}
+.opt.good{background:#14532d;border-color:var(--ok)}.opt.bad{background:#7f1d1d;border-color:var(--bad)}
+.ex{margin-top:10px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--sf)}
+.diff .m{color:var(--ok)}.diff .x{color:var(--bad);text-decoration:underline}.diff .e{color:var(--bad);text-decoration:line-through}
+.wk{display:flex;align-items:flex-end;gap:8px;height:110px}
+.wk div{flex:1;text-align:center;font-size:11px;color:var(--mut)}
+.wk i{display:block;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px}
+.big2{font-size:34px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats .card{margin:0;padding:10px}
+</style>
+</head>
+<body>
+<header><img src="icon-192.png" alt=""><h1>Polyglot AI</h1><button class="sm ok" id="btn-install" style="display:none" data-i="install"></button></header>
+<main>
+ <section class="screen active" id="s-home"></section>
+ <section class="screen" id="s-chat">
+  <div class="row" style="padding:8px 12px;background:var(--sf);border-bottom:1px solid var(--bd)">
+   <button class="sm sec" id="btn-sessions" data-i="sessions"></button>
+   <button class="sm sec" id="btn-newsess" data-i="newSession"></button>
+   <button class="sm sec" id="btn-end" data-i="endSession" style="margin-left:auto"></button>
+  </div>
+  <div id="chk" style="padding:0 12px"></div>
+  <div id="msgs"></div>
+  <div id="inbar">
+   <div class="tools">
+    <button class="sm sec" id="btn-spk"></button>
+    <button class="sm sec" id="btn-hf"></button>
+    <button class="sm sec" id="btn-stop">🔇</button>
+   </div>
+   <div class="box">
+    <textarea id="inp" rows="1" data-ph="typeMsg"></textarea>
+    <button id="mic" title="🎤">🎤</button>
+    <button id="send" data-i="send"></button>
+   </div>
+  </div>
+ </section>
+ <section class="screen" id="s-tool"></section>
+ <section class="screen" id="s-review"></section>
+ <section class="screen" id="s-progress"></section>
+ <section class="screen" id="s-settings"></section>
+</main>
+<nav>
+ <button data-go="home"><span class="ic">🏠</span><span data-i="home"></span></button>
+ <button data-go="chat"><span class="ic">💬</span><span data-i="chat"></span></button>
+ <button data-go="review"><span class="ic">🧠</span><span data-i="review"></span></button>
+ <button data-go="progress"><span class="ic">📈</span><span data-i="progress"></span></button>
+ <button data-go="settings"><span class="ic">⚙️</span><span data-i="settings"></span></button>
+</nav>
+<div id="toast"></div>
+<div id="modal-host"></div>
+<script>
+'use strict';
+/* ===== LANGUAGES ===== */
+const CODES=['en','pt','es','fr','de','zh','ko','ja'];
+const LANGS={
+ en:{name:'English',native:'English',bcp:'en-US'},
+ pt:{name:'Brazilian Portuguese',native:'Português (BR)',bcp:'pt-BR'},
+ es:{name:'Spanish (Spain)',native:'Español',bcp:'es-ES'},
+ fr:{name:'French',native:'Français',bcp:'fr-FR'},
+ de:{name:'German',native:'Deutsch',bcp:'de-DE'},
+ zh:{name:'Mandarin Chinese (Simplified)',native:'中文 (普通话)',bcp:'zh-CN'},
+ ko:{name:'Korean',native:'한국어',bcp:'ko-KR'},
+ ja:{name:'Japanese',native:'日本語',bcp:'ja-JP'}
+};
+const READING={zh:'pinyin with tone marks',ja:'hiragana (kana only, no romaji)',ko:'Revised Romanization'};
+const ASIAN=['zh','ja','ko'];
+const EQUIV={A1:'HSK 1 · JLPT N5 · TOPIK 1',A2:'HSK 2 · JLPT N4 · TOPIK 2',B1:'HSK 3-4 · JLPT N3 · TOPIK 3-4',B2:'HSK 4-5 · JLPT N2 · TOPIK 4-5',C1:'HSK 5-6 · JLPT N1 · TOPIK 5',C2:'HSK 6+ · JLPT N1+ · TOPIK 6'};
+const SCEN=['restaurant','airport','hotel','interview','doctor','shop','taxi','friend'];
+const SCEN_EMO={restaurant:'🍽️',airport:'✈️',hotel:'🏨',interview:'💼',doctor:'🩺',shop:'🛍️',taxi:'🚕',friend:'🤝'};
+const SCEN_EN={restaurant:'ordering at a restaurant',airport:'checking in at an airport',hotel:'checking in at a hotel',interview:'a job interview',doctor:'a doctor appointment',shop:'shopping for clothes',taxi:'taking a taxi and giving directions',friend:'meeting a new friend at a party'};
+
+/* ===== UI DICTIONARY (order: en pt es fr de zh ko ja) ===== */
+const I={
+home:['Home','Início','Inicio','Accueil','Start','首页','홈','ホーム'],
+chat:['Chat','Conversa','Chat','Chat','Chat','对话','대화','会話'],
+review:['Review','Revisão','Repaso','Révision','Wiederholen','复习','복습','復習'],
+progress:['Progress','Progresso','Progreso','Progrès','Fortschritt','进度','진행','進捗'],
+settings:['Settings','Configurações','Ajustes','Réglages','Einstellungen','设置','설정','設定'],
+install:['Install app','Instalar app','Instalar app','Installer l’app','App installieren','安装应用','앱 설치','アプリをインストール'],
+uninstallHow:['How to uninstall','Como desinstalar','Cómo desinstalar','Comment désinstaller','So deinstallieren','如何卸载','삭제 방법','アンインストール方法'],
+uninstallTxt:['Chrome on PC: open the app, click ⋮ in its title bar → Uninstall (or open chrome://apps, right-click the app → Remove). Android: long-press the app icon → Uninstall (or Settings → Apps → Polyglot AI → Uninstall). Your data stays in the browser until you clear site data.','Chrome no PC: abra o app, clique em ⋮ na barra de título → Desinstalar (ou abra chrome://apps, clique com o botão direito → Remover). Android: toque e segure o ícone → Desinstalar (ou Configurações → Apps → Polyglot AI → Desinstalar). Os dados ficam no navegador até você limpar os dados do site.','Chrome en PC: abre la app, pulsa ⋮ en la barra de título → Desinstalar (o abre chrome://apps, clic derecho → Quitar). Android: mantén pulsado el icono → Desinstalar (o Ajustes → Apps → Polyglot AI → Desinstalar). Los datos siguen en el navegador hasta que borres los datos del sitio.','Chrome sur PC : ouvrez l’app, cliquez sur ⋮ dans la barre de titre → Désinstaller (ou chrome://apps, clic droit → Supprimer). Android : appui long sur l’icône → Désinstaller (ou Réglages → Applications → Polyglot AI → Désinstaller). Les données restent dans le navigateur jusqu’à l’effacement des données du site.','Chrome am PC: App öffnen, ⋮ in der Titelleiste → Deinstallieren (oder chrome://apps, Rechtsklick → Entfernen). Android: App-Symbol lange drücken → Deinstallieren (oder Einstellungen → Apps → Polyglot AI → Deinstallieren). Die Daten bleiben im Browser, bis du die Websitedaten löschst.','电脑版 Chrome：打开应用，点击标题栏的 ⋮ → 卸载（或打开 chrome://apps，右键应用 → 移除）。安卓：长按应用图标 → 卸载（或 设置 → 应用 → Polyglot AI → 卸载）。清除网站数据前，数据仍保存在浏览器中。','PC Chrome: 앱을 열고 제목 표시줄의 ⋮ → 제거 (또는 chrome://apps 에서 앱 우클릭 → 삭제). Android: 앱 아이콘을 길게 누르기 → 삭제 (또는 설정 → 앱 → Polyglot AI → 삭제). 사이트 데이터를 지우기 전까지 데이터는 브라우저에 남습니다.','PC の Chrome：アプリを開き、タイトルバーの ⋮ →「アンインストール」（または chrome://apps でアプリを右クリック →「削除」）。Android：アイコンを長押し →「アンインストール」（または 設定 → アプリ → Polyglot AI）。サイトデータを消去するまでデータはブラウザに残ります。'],
+practice:['Practice today','Pratique hoje','Practica hoy','Pratiquez aujourd’hui','Heute üben','今日练习','오늘의 연습','今日の練習'],
+goalToday:['Daily goal','Meta diária','Meta diaria','Objectif du jour','Tagesziel','每日目标','일일 목표','1日の目標'],
+min:['min','min','min','min','Min.','分钟','분','分'],
+dueCards:['cards due','cartões para revisar','tarjetas por repasar','cartes à réviser','fällige Karten','张待复习','복습할 카드','枚の復習カード'],
+mFree:['Free conversation','Conversa livre','Conversación libre','Conversation libre','Freies Gespräch','自由对话','자유 대화','フリー会話'],
+mScen:['Role-play scenarios','Cenários','Escenarios','Scénarios','Rollenspiele','情景对话','롤플레이','シナリオ'],
+mLesson:['Mini-lessons','Mini-lições','Mini-lecciones','Mini-leçons','Mini-Lektionen','迷你课程','미니 레슨','ミニレッスン'],
+mDict:['Listen & repeat','Ouvir e repetir','Escuchar y repetir','Écouter et répéter','Hören & wiederholen','听写跟读','듣고 따라하기','聞いて繰り返す'],
+mLevel:['Level test','Teste de nível','Prueba de nivel','Test de niveau','Einstufungstest','水平测试','레벨 테스트','レベルテスト'],
+resume:['Continue last session','Continuar última sessão','Continuar última sesión','Reprendre la dernière session','Letzte Sitzung fortsetzen','继续上次会话','마지막 세션 이어하기','前回のセッションを続ける'],
+studying:['Learning','Aprendendo','Aprendiendo','J’apprends','Ich lerne','学习','학습 중','学習中'],
+typeMsg:['Type a message…','Digite uma mensagem…','Escribe un mensaje…','Écrivez un message…','Nachricht eingeben…','输入消息…','메시지 입력…','メッセージを入力…'],
+send:['Send','Enviar','Enviar','Envoyer','Senden','发送','보내기','送信'],
+newSession:['New session','Nova sessão','Nueva sesión','Nouvelle session','Neue Sitzung','新会话','새 세션','新規'],
+sessions:['Sessions','Sessões','Sesiones','Sessions','Sitzungen','会话','세션','履歴'],
+endSession:['End session','Encerrar','Terminar','Terminer','Beenden','结束','종료','終了'],
+rename:['Rename','Renomear','Renombrar','Renommer','Umbenennen','重命名','이름 변경','名前変更'],
+del:['Delete','Apagar','Borrar','Supprimer','Löschen','删除','삭제','削除'],
+cancel:['Cancel','Cancelar','Cancelar','Annuler','Abbrechen','取消','취소','キャンセル'],
+close:['Close','Fechar','Cerrar','Fermer','Schließen','关闭','닫기','閉じる'],
+saveSel:['Save selected','Salvar selecionados','Guardar seleccionados','Enregistrer la sélection','Auswahl speichern','保存所选','선택 저장','選択を保存'],
+corrections:['Corrections','Correções','Correcciones','Corrections','Korrekturen','纠错','교정','訂正'],
+newWords:['New words','Palavras novas','Palabras nuevas','Nouveaux mots','Neue Wörter','新词','새 단어','新しい単語'],
+slow:['Slow','Devagar','Lento','Lent','Langsam','慢','느리게','ゆっくり'],
+spkTarget:['🎤 Target language','🎤 Idioma-alvo','🎤 Idioma meta','🎤 Langue cible','🎤 Zielsprache','🎤 目标语言','🎤 학습 언어','🎤 学習言語'],
+spkNative:['🎤 My language','🎤 Minha língua','🎤 Mi idioma','🎤 Ma langue','🎤 Meine Sprache','🎤 母语','🎤 내 언어','🎤 母語'],
+hfOn:['Hands-free: on','Mãos-livres: ligado','Manos libres: sí','Mains libres : oui','Freisprechen: an','免提：开','핸즈프리: 켬','ハンズフリー：オン'],
+hfOff:['Hands-free: off','Mãos-livres: desligado','Manos libres: no','Mains libres : non','Freisprechen: aus','免提：关','핸즈프리: 끔','ハンズフリー：オフ'],
+thinking:['Thinking…','Pensando…','Pensando…','Réflexion…','Denke nach…','思考中…','생각 중…','考え中…'],
+noKey:['Add your Gemini API key in Settings first.','Adicione sua chave da API Gemini em Configurações.','Primero añade tu clave de API de Gemini en Ajustes.','Ajoutez d’abord votre clé API Gemini dans Réglages.','Füge zuerst deinen Gemini-API-Schlüssel in den Einstellungen hinzu.','请先在设置中添加 Gemini API 密钥。','먼저 설정에서 Gemini API 키를 추가하세요.','まず設定で Gemini API キーを追加してください。'],
+error:['Error: ','Erro: ','Error: ','Erreur : ','Fehler: ','错误：','오류: ','エラー：'],
+retry:['Retry','Tentar de novo','Reintentar','Réessayer','Erneut','重试','다시 시도','再試行'],
+noSR:['Speech recognition is not available. Use Chrome over HTTPS or localhost.','Reconhecimento de fala indisponível. Use o Chrome em HTTPS ou localhost.','Reconocimiento de voz no disponible. Usa Chrome con HTTPS o localhost.','Reconnaissance vocale indisponible. Utilisez Chrome en HTTPS ou localhost.','Spracherkennung nicht verfügbar. Nutze Chrome mit HTTPS oder localhost.','语音识别不可用。请在 HTTPS 或 localhost 下使用 Chrome。','음성 인식을 사용할 수 없습니다. HTTPS 또는 localhost의 Chrome을 사용하세요.','音声認識は利用できません。HTTPS または localhost の Chrome を使ってください。'],
+micDenied:['Microphone permission denied.','Permissão de microfone negada.','Permiso de micrófono denegado.','Accès au micro refusé.','Mikrofonzugriff verweigert.','麦克风权限被拒绝。','마이크 권한이 거부되었습니다.','マイクの許可が拒否されました。'],
+noVoice:['No voice installed for this language. Android: Settings → System → Languages → Text-to-speech → install voice data.','Nenhuma voz instalada para este idioma. Android: Configurações → Sistema → Idiomas → Texto para fala → instalar dados de voz.','No hay voz instalada para este idioma. Android: Ajustes → Sistema → Idiomas → Texto a voz → instalar datos de voz.','Aucune voix installée pour cette langue. Android : Réglages → Système → Langues → Synthèse vocale → installer les données vocales.','Keine Stimme für diese Sprache installiert. Android: Einstellungen → System → Sprachen → Text-to-Speech → Sprachdaten installieren.','此语言未安装语音。安卓：设置 → 系统 → 语言 → 文字转语音 → 安装语音数据。','이 언어의 음성이 설치되지 않았습니다. Android: 설정 → 시스템 → 언어 → 텍스트 음성 변환 → 음성 데이터 설치.','この言語の音声がありません。Android：設定 → システム → 言語 → テキスト読み上げ → 音声データをインストール。'],
+noCards:['Nothing to review right now. 🎉','Nada para revisar agora. 🎉','Nada que repasar ahora. 🎉','Rien à réviser pour l’instant. 🎉','Aktuell nichts zu wiederholen. 🎉','暂时没有要复习的内容。🎉','지금 복습할 카드가 없습니다. 🎉','今は復習するものがありません。🎉'],
+showAns:['Show answer','Mostrar resposta','Mostrar respuesta','Voir la réponse','Antwort zeigen','显示答案','정답 보기','答えを見る'],
+knew:['I knew it','Eu sabia','Lo sabía','Je savais','Gewusst','我记得','알았어요','わかった'],
+didnt:['Not yet','Ainda não','Aún no','Pas encore','Noch nicht','不记得','아직요','まだ'],
+cardsLeft:['left','restantes','restantes','restantes','übrig','剩余','남음','残り'],
+doneReview:['Review finished!','Revisão concluída!','¡Repaso terminado!','Révision terminée !','Wiederholung beendet!','复习完成！','복습 완료!','復習完了！'],
+streak:['Day streak','Dias seguidos','Días seguidos','Jours d’affilée','Tage in Folge','连续天数','연속 일수','連続日数'],
+weekTime:['Minutes this week','Minutos nesta semana','Minutos esta semana','Minutes cette semaine','Minuten diese Woche','本周分钟数','이번 주 분','今週の分'],
+words:['Words','Palavras','Palabras','Mots','Wörter','词汇','단어','単語'],
+wNew:['New','Novas','Nuevas','Nouveaux','Neu','新','신규','新規'],
+wLearning:['Learning','Aprendendo','Aprendiendo','En cours','Lernend','学习中','학습 중','学習中'],
+wMastered:['Mastered','Dominadas','Dominadas','Maîtrisés','Gemeistert','已掌握','숙달','習得'],
+topErrors:['Most frequent mistakes','Erros mais frequentes','Errores más frecuentes','Erreurs les plus fréquentes','Häufigste Fehler','最常见错误','자주 하는 실수','よくある間違い'],
+lessonHist:['Lesson history','Histórico de lições','Historial de lecciones','Historique des leçons','Lektionsverlauf','课程记录','레슨 기록','レッスン履歴'],
+levelEst:['Estimated level (AI estimate)','Nível estimado (estimativa da IA)','Nivel estimado (estimación de la IA)','Niveau estimé (estimation de l’IA)','Geschätztes Niveau (KI-Schätzung)','估计水平（AI 估算）','추정 레벨 (AI 추정)','推定レベル（AI の推定）'],
+reassess:['Re-assess now','Reavaliar agora','Reevaluar ahora','Réévaluer','Jetzt neu bewerten','立即重新评估','다시 평가','今すぐ再評価'],
+noData:['No data yet.','Sem dados ainda.','Sin datos aún.','Pas encore de données.','Noch keine Daten.','暂无数据。','아직 데이터가 없습니다.','データはまだありません。'],
+setApi:['Gemini API key','Chave da API Gemini','Clave de API de Gemini','Clé API Gemini','Gemini-API-Schlüssel','Gemini API 密钥','Gemini API 키','Gemini API キー'],
+setModel:['Model','Modelo','Modelo','Modèle','Modell','模型','모델','モデル'],
+setTemp:['Temperature','Temperatura','Temperatura','Température','Temperatur','温度','온도','温度'],
+setUi:['Interface language','Idioma da interface','Idioma de la interfaz','Langue de l’interface','Sprache der Oberfläche','界面语言','인터페이스 언어','表示言語'],
+setNative:['My native language (explanations)','Meu idioma nativo (explicações)','Mi idioma nativo (explicaciones)','Ma langue maternelle (explications)','Meine Muttersprache (Erklärungen)','母语（讲解语言）','모국어 (설명 언어)','母語（説明の言語）'],
+setTargets:['Languages I practice','Idiomas que pratico','Idiomas que practico','Langues pratiquées','Lernsprachen','我练习的语言','연습하는 언어','練習する言語'],
+setActive:['Active language','Idioma ativo','Idioma activo','Langue active','Aktive Sprache','当前语言','현재 언어','現在の言語'],
+setLevel:['My level','Meu nível','Mi nivel','Mon niveau','Mein Niveau','我的水平','내 레벨','私のレベル'],
+setGoal:['My goal (travel, work, exams…)','Meu objetivo (viagem, trabalho, provas…)','Mi objetivo (viaje, trabajo, exámenes…)','Mon objectif (voyage, travail, examens…)','Mein Ziel (Reisen, Beruf, Prüfungen…)','我的目标（旅行、工作、考试…）','내 목표 (여행, 업무, 시험…)','目標（旅行、仕事、試験…）'],
+setCorr:['Corrections','Correções','Correcciones','Corrections','Korrekturen','纠错方式','교정 방식','訂正方法'],
+corrEach:['After each message','Após cada mensagem','Tras cada mensaje','Après chaque message','Nach jeder Nachricht','每条消息后','메시지마다','メッセージごと'],
+corrEnd:['At end of session','No fim da sessão','Al final de la sesión','En fin de session','Am Ende der Sitzung','会话结束时','세션 끝에','セッション終了時'],
+corrOff:['Off','Desligadas','Desactivadas','Désactivées','Aus','关闭','끔','オフ'],
+setDaily:['Daily goal (minutes)','Meta diária (minutos)','Meta diaria (minutos)','Objectif quotidien (minutes)','Tagesziel (Minuten)','每日目标（分钟）','일일 목표(분)','1日の目標（分）'],
+setVoice:['Voice','Voz','Voz','Voix','Stimme','语音','음성','音声'],
+defVoice:['Default voice','Voz padrão','Voz predeterminada','Voix par défaut','Standardstimme','默认语音','기본 음성','既定の音声'],
+setRate:['Speech speed','Velocidade da fala','Velocidad de voz','Vitesse de la voix','Sprechtempo','语速','말하기 속도','読み上げ速度'],
+setAutoRead:['Read replies aloud automatically','Ler respostas em voz alta automaticamente','Leer respuestas en voz alta automáticamente','Lire les réponses à voix haute','Antworten automatisch vorlesen','自动朗读回复','답변 자동 읽기','返答を自動で読み上げ'],
+setReading:['Show reading (pinyin / kana / romanization)','Mostrar leitura (pinyin / kana / romanização)','Mostrar lectura (pinyin / kana / romanización)','Afficher la lecture (pinyin / kana / romanisation)','Lesung anzeigen (Pinyin / Kana / Romanisierung)','显示读音（拼音/假名/罗马字）','발음 표기 표시 (병음/가나/로마자)','読みを表示（ピンイン／かな／ローマ字）'],
+setTrans:['Show translation','Mostrar tradução','Mostrar traducción','Afficher la traduction','Übersetzung anzeigen','显示翻译','번역 표시','翻訳を表示'],
+setAutoSend:['Send automatically when I stop speaking','Enviar automaticamente ao parar de falar','Enviar automáticamente al dejar de hablar','Envoyer automatiquement à la fin de la parole','Automatisch senden, wenn ich aufhöre zu sprechen','说完自动发送','말을 마치면 자동 전송','話し終えたら自動送信'],
+memTitle:['Student memory (max 20)','Memória do aluno (máx. 20)','Memoria del alumno (máx. 20)','Mémoire de l’élève (max 20)','Lernenden-Gedächtnis (max. 20)','学习者记忆（最多 20 条）','학습자 메모리 (최대 20개)','学習者メモリ（最大20件）'],
+memAdd:['Add','Adicionar','Añadir','Ajouter','Hinzufügen','添加','추가','追加'],
+memHint:['Interests, goals, recurring mistakes…','Interesses, objetivos, erros recorrentes…','Intereses, objetivos, errores recurrentes…','Centres d’intérêt, objectifs, erreurs récurrentes…','Interessen, Ziele, wiederkehrende Fehler…','兴趣、目标、常犯错误…','관심사, 목표, 반복되는 실수…','興味、目標、よくある間違い…'],
+delSel:['Delete selected','Apagar selecionados','Borrar seleccionados','Supprimer la sélection','Auswahl löschen','删除所选','선택 삭제','選択を削除'],
+delAll:['Delete all','Apagar todos','Borrar todos','Tout supprimer','Alle löschen','全部删除','모두 삭제','すべて削除'],
+expAll:['Export data (JSON)','Exportar dados (JSON)','Exportar datos (JSON)','Exporter les données (JSON)','Daten exportieren (JSON)','导出数据 (JSON)','데이터 내보내기 (JSON)','データを書き出し (JSON)'],
+impAll:['Import data (JSON)','Importar dados (JSON)','Importar datos (JSON)','Importer des données (JSON)','Daten importieren (JSON)','导入数据 (JSON)','데이터 가져오기 (JSON)','データを読み込み (JSON)'],
+expNote:['The export does not include your API key.','A exportação não inclui sua chave de API.','La exportación no incluye tu clave de API.','L’export n’inclut pas votre clé API.','Der Export enthält deinen API-Schlüssel nicht.','导出不包含 API 密钥。','내보내기에는 API 키가 포함되지 않습니다.','書き出しに API キーは含まれません。'],
+confirm:['Are you sure?','Tem certeza?','¿Seguro?','Êtes-vous sûr ?','Sicher?','确定吗？','확실합니까?','よろしいですか？'],
+saved:['Saved','Salvo','Guardado','Enregistré','Gespeichert','已保存','저장됨','保存しました'],
+imported:['Data imported.','Dados importados.','Datos importados.','Données importées.','Daten importiert.','数据已导入。','데이터를 가져왔습니다.','読み込みました。'],
+sessionSummary:['Session summary','Resumo da sessão','Resumen de la sesión','Résumé de la session','Sitzungszusammenfassung','会话总结','세션 요약','セッションの要約'],
+memProposals:['Suggested memory updates','Atualizações de memória sugeridas','Actualizaciones de memoria sugeridas','Mises à jour de mémoire suggérées','Vorgeschlagene Gedächtnis-Updates','建议的记忆更新','제안된 메모리 업데이트','メモリ更新の提案'],
+scenPick:['Choose a scenario','Escolha um cenário','Elige un escenario','Choisissez un scénario','Szenario wählen','选择情景','시나리오 선택','シナリオを選択'],
+sc_restaurant:['Restaurant','Restaurante','Restaurante','Restaurant','Restaurant','餐厅','식당','レストラン'],
+sc_airport:['Airport','Aeroporto','Aeropuerto','Aéroport','Flughafen','机场','공항','空港'],
+sc_hotel:['Hotel','Hotel','Hotel','Hôtel','Hotel','酒店','호텔','ホテル'],
+sc_interview:['Job interview','Entrevista de emprego','Entrevista de trabajo','Entretien d’embauche','Vorstellungsgespräch','面试','면접','面接'],
+sc_doctor:['Doctor','Consulta médica','Médico','Médecin','Arzt','看医生','병원','病院'],
+sc_shop:['Shopping','Compras','Compras','Shopping','Einkaufen','购物','쇼핑','買い物'],
+sc_taxi:['Taxi','Táxi','Taxi','Taxi','Taxi','出租车','택시','タクシー'],
+sc_friend:['New friend','Novo amigo','Nuevo amigo','Nouvel ami','Neue Freunde','交新朋友','새 친구','新しい友達'],
+checklist:['Objectives','Objetivos','Objetivos','Objectifs','Ziele','目标','목표','目標'],
+lessonTopic:['Topic (vocabulary or grammar)','Tema (vocabulário ou gramática)','Tema (vocabulario o gramática)','Thème (vocabulaire ou grammaire)','Thema (Vokabeln oder Grammatik)','主题（词汇或语法）','주제 (어휘 또는 문법)','テーマ（語彙または文法）'],
+generate:['Generate lesson','Gerar lição','Generar lección','Générer la leçon','Lektion erstellen','生成课程','레슨 만들기','レッスンを作成'],
+examples:['Examples','Exemplos','Ejemplos','Exemples','Beispiele','例句','예문','例文'],
+exercises:['Exercises','Exercícios','Ejercicios','Exercices','Übungen','练习','연습문제','練習問題'],
+check:['Check','Verificar','Comprobar','Vérifier','Prüfen','检查','확인','確認'],
+next:['Next','Próximo','Siguiente','Suivant','Weiter','下一个','다음','次へ'],
+correctMsg:['Correct! ✅','Correto! ✅','¡Correcto! ✅','Correct ! ✅','Richtig! ✅','正确！✅','정답! ✅','正解！✅'],
+wrongMsg:['Not quite. ❌ Answer: ','Quase. ❌ Resposta: ','Casi. ❌ Respuesta: ','Pas tout à fait. ❌ Réponse : ','Nicht ganz. ❌ Antwort: ','不对。❌ 答案：','아쉬워요. ❌ 정답: ','惜しい。❌ 答え：'],
+score:['Score','Pontuação','Puntuación','Score','Ergebnis','得分','점수','スコア'],
+newSentence:['New sentence','Nova frase','Nueva frase','Nouvelle phrase','Neuer Satz','新句子','새 문장','新しい文'],
+yourAnswer:['Type or say what you heard…','Escreva ou fale o que ouviu…','Escribe o di lo que oíste…','Écrivez ou dites ce que vous avez entendu…','Schreibe oder sprich, was du gehört hast…','输入或说出你听到的…','들은 내용을 쓰거나 말하세요…','聞こえた内容を入力または発話…'],
+accuracy:['Match','Acerto','Coincidencia','Correspondance','Übereinstimmung','匹配度','일치율','一致率'],
+srNote:['This only shows what the recognizer understood. It is NOT a pronunciation grade.','Isto só mostra o que o reconhecedor entendeu. NÃO é uma nota de pronúncia.','Esto solo muestra lo que entendió el reconocedor. NO es una nota de pronunciación.','Ceci montre seulement ce que le système a compris. Ce n’est PAS une note de prononciation.','Das zeigt nur, was die Erkennung verstanden hat. Es ist KEINE Aussprachenote.','这只表示识别器听懂了什么，不是发音评分。','인식기가 이해한 내용일 뿐 발음 점수가 아닙니다.','認識結果を示すだけで、発音の採点ではありません。'],
+saveReview:['Save to review','Salvar na revisão','Guardar para repasar','Ajouter à la révision','Zur Wiederholung speichern','加入复习','복습에 저장','復習に追加'],
+levelNote:['Estimate only; not an official result.','Apenas estimativa; não é resultado oficial.','Solo una estimación; no es un resultado oficial.','Simple estimation ; pas un résultat officiel.','Nur eine Schätzung, kein offizielles Ergebnis.','仅为估算，非官方结果。','추정치일 뿐 공식 결과가 아닙니다.','推定であり公式結果ではありません。'],
+welcome:['Welcome! Choose your languages and add your Gemini API key.','Bem-vindo! Escolha seus idiomas e adicione sua chave da API Gemini.','¡Bienvenido! Elige tus idiomas y añade tu clave de API de Gemini.','Bienvenue ! Choisissez vos langues et ajoutez votre clé API Gemini.','Willkommen! Wähle deine Sprachen und füge deinen Gemini-API-Schlüssel hinzu.','欢迎！请选择语言并添加 Gemini API 密钥。','환영합니다! 언어를 선택하고 Gemini API 키를 추가하세요.','ようこそ！言語を選び、Gemini API キーを追加してください。'],
+apiHelp:['Get a free key at aistudio.google.com/apikey. It is stored only in this browser.','Obtenha uma chave grátis em aistudio.google.com/apikey. Ela fica salva só neste navegador.','Consigue una clave gratis en aistudio.google.com/apikey. Se guarda solo en este navegador.','Obtenez une clé gratuite sur aistudio.google.com/apikey. Elle reste uniquement dans ce navigateur.','Hol dir einen kostenlosen Schlüssel auf aistudio.google.com/apikey. Er wird nur in diesem Browser gespeichert.','在 aistudio.google.com/apikey 获取免费密钥，仅保存在此浏览器中。','aistudio.google.com/apikey 에서 무료 키를 받으세요. 이 브라우저에만 저장됩니다.','aistudio.google.com/apikey で無料キーを取得。このブラウザにのみ保存されます。'],
+installTip:['Install via the browser menu ⋮ → “Install app” if the button is missing.','Instale pelo menu ⋮ do navegador → “Instalar app” se o botão não aparecer.','Instala desde el menú ⋮ del navegador → “Instalar app” si no ves el botón.','Installez via le menu ⋮ du navigateur → « Installer l’app » si le bouton manque.','Installiere über das Browsermenü ⋮ → „App installieren“, falls der Button fehlt.','若无按钮，请通过浏览器菜单 ⋮ →“安装应用”。','버튼이 없으면 브라우저 메뉴 ⋮ → “앱 설치”를 사용하세요.','ボタンがない場合はブラウザのメニュー ⋮ →「アプリをインストール」。'],
+sessEnded:['Session saved.','Sessão salva.','Sesión guardada.','Session enregistrée.','Sitzung gespeichert.','会话已保存。','세션이 저장되었습니다.','セッションを保存しました。'],
+rawFallback:['(The reply was not valid JSON; showing raw text.)','(A resposta não veio em JSON válido; mostrando texto cru.)','(La respuesta no era JSON válido; se muestra el texto sin procesar.)','(Réponse non valide en JSON ; texte brut affiché.)','(Antwort war kein gültiges JSON; Rohtext wird angezeigt.)','（回复不是有效 JSON，显示原文。）','(응답이 유효한 JSON이 아니어서 원문을 표시합니다.)','（JSON が不正なため、生のテキストを表示します。）'],
+startChat:['Start a session from Home.','Inicie uma sessão na tela Início.','Inicia una sesión desde Inicio.','Démarrez une session depuis l’accueil.','Starte eine Sitzung auf dem Startbildschirm.','请从首页开始会话。','홈에서 세션을 시작하세요.','ホームからセッションを始めてください。'],
+type_free:['Free chat','Conversa livre','Conversación libre','Conversation libre','Freies Gespräch','自由对话','자유 대화','フリー会話'],
+type_scenario:['Scenario','Cenário','Escenario','Scénario','Szenario','情景','시나리오','シナリオ'],
+type_level:['Level test','Teste de nível','Prueba de nivel','Test de niveau','Einstufungstest','水平测试','레벨 테스트','レベルテスト']
+};
+const LI=Object.fromEntries(CODES.map((c,i)=>[c,i]));
+
+/* ===== HELPERS / SETTINGS ===== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DEF={key:'',model:'gemini-3.6-flash',temp:0.7,ui:'en',native:'en',targets:['es'],active:'es',level:'A2',goal:'',corr:'each',daily:15,voices:{},rate:1,autoRead:true,showRead:true,showTrans:true,autoSend:true,speakMode:'target',hf:false,levelEst:null,sessCount:0,welcomed:false};
+let S=Object.assign({},DEF);
+try{Object.assign(S,JSON.parse(localStorage.getItem('pl_settings')||'{}'))}catch(e){}
+const saveS=()=>{try{localStorage.setItem('pl_settings',JSON.stringify(S))}catch(e){}};
+const t=k=>{const a=I[k];if(!a)return k;return a[LI[S.ui]]||a[0]};
+function toast(m,ms=2600){const e=$('toast');e.textContent=m;e.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display='none',ms)}
+function applyI18n(){
+ document.documentElement.lang=LANGS[S.ui].bcp;
+ document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+ document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
+ updTools();
+}
+const pad=n=>String(n).padStart(2,'0');
+const todayISO=(d=new Date())=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays=(iso,n)=>{const [y,m,d]=iso.split('-').map(Number);return todayISO(new Date(y,m-1,d+n))};
+const bcp=c=>LANGS[c]?LANGS[c].bcp:'en-US';
+const lc2=c=>String(c||'').toLowerCase().replace('_','-').slice(0,2);
+
+/* ===== INDEXEDDB ===== */
+const STORES=['sessions','messages','vocab','errors','activity','memory','lessons'];
+let db=null;
+function openDB(){return new Promise((res,rej)=>{
+ const r=indexedDB.open('polyglot-ai-db',1);
+ r.onupgradeneeded=()=>{const d=r.result;STORES.forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id',autoIncrement:!['vocab','activity'].includes(s)})})};
+ r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error);
+})}
+const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const dbAll=s=>rq(db.transaction(s).objectStore(s).getAll());
+const dbGet=(s,k)=>rq(db.transaction(s).objectStore(s).get(k));
+const dbPut=(s,o)=>rq(db.transaction(s,'readwrite').objectStore(s).put(o));
+const dbDel=(s,k)=>rq(db.transaction(s,'readwrite').objectStore(s).delete(k));
+const dbClear=s=>rq(db.transaction(s,'readwrite').objectStore(s).clear());
+
+/* ===== SPACED REPETITION / PROGRESS LOGIC ===== */
+const INTERVALS=[1,3,7,14,30];
+function newVocab(lang,term,o={}){return{id:lang+'|'+term.trim().toLowerCase(),lang,term:term.trim(),reading:o.reading||'',translation:o.translation||'',example:o.example||'',hits:0,miss:0,reps:0,stage:0,interval:0,due:todayISO(),created:Date.now()}}
+function srsReview(v,ok,today=todayISO()){
+ if(ok){v.hits++;v.reps++;v.stage=Math.min(v.stage+1,5);v.interval=INTERVALS[v.stage-1];v.due=addDays(today,v.interval)}
+ else{v.miss++;v.stage=0;v.interval=1;v.due=addDays(today,1)}
+ return v;
+}
+const vStage=v=>(v.reps===0&&v.miss===0)?'new':(v.stage>=4?'mastered':'learning');
+async function addVocab(lang,term,o){
+ if(!term||!String(term).trim())return false;
+ const nv=newVocab(lang,String(term),o||{});const old=await dbGet('vocab',nv.id);
+ if(old){let ch=false;for(const k of['reading','translation','example'])if(!old[k]&&nv[k]){old[k]=nv[k];ch=true}if(ch)await dbPut('vocab',old);return false}
+ await dbPut('vocab',nv);return true;
+}
+function calcStreak(act,today=todayISO()){
+ const m={};act.forEach(a=>m[a.id]=a.secs||0);
+ let d=m[today]>=60?today:addDays(today,-1),n=0;
+ while((m[d]||0)>=60){n++;d=addDays(d,-1)}
+ return n;
+}
+async function addSecs(secs){
+ const d=todayISO();const a=(await dbGet('activity',d))||{id:d,secs:0};a.secs+=secs;await dbPut('activity',a);
+ if(curSid){const s=await dbGet('sessions',curSid);if(s){s.duration=(s.duration||0)+secs;await dbPut('sessions',s)}}
+}
+/* ===== DICTATION DIFF ===== */
+const normTxt=s=>String(s||'').toLowerCase().replace(/[\p{P}\p{S}]/gu,' ').replace(/\s+/g,' ').trim();
+function tokens(s,lang){const n=normTxt(s);return ASIAN.includes(lang)?[...n.replace(/\s/g,'')]:(n?n.split(' '):[])}
+function diffTokens(exp,got){
+ const n=exp.length,m=got.length,L=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+ for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)L[i][j]=exp[i]===got[j]?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+ const out=[];let i=0,j=0;
+ while(i<n&&j<m){if(exp[i]===got[j]){out.push({t:'m',v:exp[i]});i++;j++}else if(L[i+1][j]>=L[i][j+1]){out.push({t:'x',v:exp[i]});i++}else{out.push({t:'e',v:got[j]});j++}}
+ while(i<n)out.push({t:'x',v:exp[i++]});while(j<m)out.push({t:'e',v:got[j++]});
+ return out;
+}
+
+/* ===== VOICE: TTS ===== */
+let curSid=null,speaking=false,ttsToken=0,warnedVoice={};
+const hasTTS='speechSynthesis' in window;
+function voicesFor(code){const p=lc2(code);return hasTTS?speechSynthesis.getVoices().filter(v=>lc2(v.lang)===p):[]}
+function pickVoice(code){
+ const vs=speechSynthesis.getVoices(),nm=s=>s.replace('_','-').toLowerCase(),want=nm(bcp(code));
+ return vs.find(v=>v.name===S.voices[code])||vs.find(v=>nm(v.lang)===want)||vs.find(v=>lc2(v.lang)===lc2(code))||null;
+}
+function stopSpeak(){ttsToken++;speaking=false;if(hasTTS)speechSynthesis.cancel()}
+function cleanForSpeech(s){return String(s||'').replace(/```[\s\S]*?```/g,' ').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,'').replace(/[*_#`>~|]/g,'').replace(/\s+/g,' ').trim()}
+function splitText(s){const fr=s.match(/[^.!?…。！？]+[.!?…。！？]*\s*/g)||[s],out=[];let cur='';for(const f of fr){if(cur&&(cur+f).length>220){out.push(cur);cur=f}else cur+=f}if(cur)out.push(cur);return out}
+/* items: [{text,lang}] ; mult: speed multiplier (slow button) */
+function speak(items,onEnd,mult=1){
+ if(!hasTTS){onEnd&&onEnd();return}
+ stopSpeak();
+ const q=[];
+ items.forEach(it=>{const lang=LANGS[lc2(it.lang)]?lc2(it.lang):S.active;splitText(cleanForSpeech(it.text)).forEach(p=>{if(p)q.push({text:p,lang})})});
+ if(!q.length){onEnd&&onEnd();return}
+ const tk=++ttsToken;let i=0;speaking=true;
+ const next=()=>{
+  if(tk!==ttsToken)return;
+  if(i>=q.length){speaking=false;onEnd&&onEnd();return}
+  const c=q[i++],u=new SpeechSynthesisUtterance(c.text);
+  u.lang=bcp(c.lang);u.rate=Math.min(2,Math.max(0.5,S.rate*mult));
+  const v=pickVoice(c.lang);
+  if(v)u.voice=v;
+  else if(!warnedVoice[c.lang]&&speechSynthesis.getVoices().length){warnedVoice[c.lang]=1;toast(t('noVoice'),6000)}
+  u.onend=next;u.onerror=()=>{if(tk===ttsToken){speaking=false;onEnd&&onEnd()}};
+  speechSynthesis.speak(u);
+ };
+ setTimeout(next,60);
+}
+
+/* ===== VOICE: STT ===== */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,listening=false,emptyTries=0;
+function sttLang(){return bcp(S.speakMode==='target'?S.active:S.native)}
+/* target: {el, onFinal()} */
+function listen(el,onFinal){
+ if(!SR){toast(t('noSR'),5000);return}
+ stopSpeak();stopListen();
+ const base=el.value.trim()?el.value.trim()+' ':'';
+ rec=new SR();rec.lang=sttLang();rec.interimResults=true;rec.continuous=false;
+ rec.onresult=e=>{let x='';for(let i=0;i<e.results.length;i++)x+=e.results[i][0].transcript;el.value=base+x};
+ rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast(t('micDenied'),5000);else if(e.error!=='no-speech'&&e.error!=='aborted')toast(t('error')+e.error)};
+ rec.onend=()=>{listening=false;rec=null;updMic();const had=el.value.trim()!==base.trim();onFinal&&onFinal(had)};
+ try{rec.start();listening=true;updMic()}catch(e){rec=null;listening=false}
+}
+function stopListen(){if(rec){rec.onend=null;try{rec.abort()}catch(e){}rec=null}listening=false;updMic()}
+function updMic(){const b=$('mic');if(b){b.classList.toggle('on',listening);b.textContent=listening?'⏹':'🎤'}}
+function updTools(){
+ $('btn-spk').textContent=t(S.speakMode==='target'?'spkTarget':'spkNative');
+ $('btn-hf').textContent=t(S.hf?'hfOn':'hfOff');
+}
+if(hasTTS)speechSynthesis.onvoiceschanged=()=>{if($('s-settings').classList.contains('active'))renderSettings()};
+
+/* ===== GEMINI ===== */
+async function gemini(contents,o={}){
+ if(!S.key)throw new Error(t('noKey'));
+ const url=`https://generativelanguage.googleapis.com/v1beta/models/${S.model}:generateContent`;
+ const body={contents:typeof contents==='string'?[{role:'user',parts:[{text:contents}]}]:contents};
+ if(o.system)body.systemInstruction={parts:[{text:o.system}]};
+ const cfg={temperature:o.temp??S.temp};if(o.json)cfg.responseMimeType='application/json';
+ body.generationConfig=cfg;
+ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S.key},body:JSON.stringify(body)});
+ if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||('API '+r.status))}
+ const d=await r.json();
+ const txt=(d.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
+ if(!txt)throw new Error('Empty response');
+ return txt;
+}
+function extractJSON(s){
+ s=String(s).replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+ try{return JSON.parse(s)}catch(e){}
+ const a=s.indexOf('{'),b=s.lastIndexOf('}');
+ if(a>=0&&b>a){try{return JSON.parse(s.slice(a,b+1))}catch(e){}}
+ return null;
+}
+async function geminiJSON(contents,o={}){
+ for(let i=0;i<2;i++){
+  const raw=await gemini(contents,Object.assign({},o,{json:true}));
+  const j=extractJSON(raw);
+  if(j&&typeof j==='object')return{json:j,raw};
+  if(i===1)return{json:null,raw};
+ }
+}
+
+/* ===== PROMPTS ===== */
+const nameOf=c=>LANGS[c].name;
+async function memoryText(){const m=await dbAll('memory');return m.length?m.map(x=>'- '+x.text).join('\n'):'(none)'}
+const SCHEMA=`{"segments":[{"lang":"es","text":"","role":"reply|example|explanation|correction","reading":"","translation":""}],"corrections":[{"original":"","corrected":"","explanation":"","category":"grammar|vocabulary|spelling|word-order|tense|particles|other"}],"new_vocab":[{"term":"","lang":"","reading":"","translation":"","example":""}],"exercise":null}`;
+async function sysPrompt(sess){
+ const T=S.active,N=S.native;
+ const corr={each:'After each student message, put every real mistake in "corrections" (explanations in '+nameOf(N)+'), and keep the reply itself natural. If there is no mistake, use an empty list.',end:'Do NOT correct during the conversation: always return an empty "corrections" list (corrections are given at the end of the session).',off:'Never correct: always return an empty "corrections" list.'}[S.corr];
+ let mode={
+  free:'Free conversation. Reply in '+nameOf(T)+' with 2 to 4 short sentences at the student\'s level, then ask a simple follow-up question.',
+  scenario:'Role-play scenario: '+(SCEN_EN[sess.scenario]||'everyday situation')+'. You play the other person in the scene (stay in character, reply in '+nameOf(T)+', 2 to 4 short sentences). On the very first turn add "checklist": 3 to 5 short objectives for the student, written in '+nameOf(N)+'. On every turn add "checklist_done": the cumulative list of 0-based indexes of objectives already achieved. When all are achieved, congratulate in a "explanation" segment and set "session_complete": true.',
+  level:'Level test. Ask ONE question at a time in '+nameOf(T)+', starting easy and getting harder (A1 to C2) depending on the answers. Do not correct or teach during the test. After about 8 questions, give "level_estimate":{"level":"A1|A2|B1|B2|C1|C2","comment":"short rationale in '+nameOf(N)+'"} and set "session_complete": true; until then omit level_estimate.'
+ }[sess.mode]||'';
+ return `You are a friendly, patient language teacher inside a mobile app with voice.
+Student native language: ${nameOf(N)} (${N}). Target language: ${nameOf(T)} (${T}). Student level: ${S.level}. Goal: ${S.goal||'general'}.
+LANGUAGE RULES: replies (role "reply") are in ${nameOf(T)}. ALL explanations, corrections, translations, objectives and comments are in ${nameOf(N)}. Never mix languages inside one segment; split text into segments and give each its own "lang" code (one of ${CODES.join(', ')}). Segment text is spoken aloud: plain text only, no markdown, no emojis, no brackets with other languages.
+Every segment in ${nameOf(T)} needs "translation" in ${nameOf(N)}.${ASIAN.includes(T)?` Also fill "reading" (${READING[T]}) for ${nameOf(T)} segments.`:' Leave "reading" empty.'}
+${corr}
+Add useful words/phrases the student should learn to "new_vocab" (max 4 per turn, "lang" = ${T}, with translation in ${nameOf(N)}).
+Adjust difficulty to the level. "exercise" is normally null.
+Student memory:\n${await memoryText()}
+MODE: ${mode}
+OUTPUT: respond ONLY with one JSON object, exactly this shape (extra keys allowed only as described): ${SCHEMA}`;
+}
+
+/* ===== SESSIONS & CHAT ===== */
+async function newSession(mode='free',scenario=''){
+ const title=mode==='scenario'?t('sc_'+scenario):t('type_'+mode);
+ const id=await dbPut('sessions',{lang:S.active,mode,scenario,title,created:Date.now(),updated:Date.now(),duration:0,checklist:[],done:[],ended:false});
+ curSid=id;go('chat');await renderChat();
+ await send('[START] Begin the session now.',true);
+}
+async function loadSession(id){curSid=id;go('chat');await renderChat()}
+async function msgsOf(sid){return(await dbAll('messages')).filter(m=>m.sid===sid).sort((a,b)=>a.id-b.id)}
+async function renderChat(){
+ const box=$('msgs');box.innerHTML='';$('chk').innerHTML='';
+ if(!curSid){box.innerHTML=`<div class="bub note">${esc(t('startChat'))}</div>`;return}
+ const s=await dbGet('sessions',curSid);if(!s){curSid=null;return renderChat()}
+ for(const m of await msgsOf(curSid))if(!m.hidden)box.appendChild(bubble(m));
+ renderChecklist(s);box.scrollTop=box.scrollHeight;
+}
+function renderChecklist(s){
+ const el=$('chk');if(!s.checklist||!s.checklist.length){el.innerHTML='';return}
+ el.innerHTML=`<div class="card" style="margin:8px 0;padding:8px 12px"><b>${esc(t('checklist'))}</b>`+s.checklist.map((c,i)=>`<div class="chk ${s.done.includes(i)?'d':''}">${s.done.includes(i)?'✅':'⬜'} ${esc(c)}</div>`).join('')+'</div>';
+}
+function bubble(m){
+ const d=document.createElement('div');
+ if(m.role==='user'){d.className='bub user';d.textContent=m.text;return d}
+ if(m.role==='note'){d.className='bub note';d.textContent=m.text;return d}
+ d.className='bub ai';const r=m.data||{segments:[{lang:S.active,text:m.text||'',role:'reply'}]};
+ (r.segments||[]).forEach(sg=>{
+  const lg=LANGS[lc2(sg.lang)]?lc2(sg.lang):S.active,div=document.createElement('div');
+  div.className='seg '+(sg.role||'reply');
+  const isT=lg!==S.native||(lg===S.active);
+  div.innerHTML=`<span class="tx" lang="${bcp(lg)}">${esc(sg.text)}</span><span class="ctl"><button data-p="1" title="🔊">🔊</button><button data-p="0.7" title="${esc(t('slow'))}">🐢</button></span>`
+   +(sg.reading&&S.showRead?`<div class="rd">${esc(sg.reading)}</div>`:'')
+   +(sg.translation&&S.showTrans&&lg!==S.native?`<div class="tr">${esc(sg.translation)}</div>`:'');
+  div.querySelectorAll('button').forEach(b=>b.onclick=()=>speak([{text:sg.text,lang:lg}],null,parseFloat(b.dataset.p)));
+  d.appendChild(div);
+ });
+ if(m.fallback){const n=document.createElement('div');n.className='mut';n.textContent=t('rawFallback');d.appendChild(n)}
+ (r.corrections||[]).forEach(c=>{if(!c||!c.corrected)return;const x=document.createElement('div');x.className='corr';x.innerHTML=`<s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b><br>${esc(c.explanation)} <span class="chip">${esc(c.category||'')}</span>`;d.appendChild(x)});
+ if(r.new_vocab&&r.new_vocab.length){const x=document.createElement('div');x.style.marginTop='8px';x.innerHTML=`<span class="mut">${esc(t('newWords'))}:</span> `+r.new_vocab.map(v=>`<span class="chip">${esc(v.term)}${v.translation?' = '+esc(v.translation):''}</span>`).join('');d.appendChild(x)}
+ if(r.level_estimate&&r.level_estimate.level){const x=document.createElement('div');x.className='corr';x.style.borderColor='var(--ok)';x.style.background='#12301f';x.innerHTML=`<b>${esc(r.level_estimate.level)}</b> <span class="mut">(${esc(EQUIV[r.level_estimate.level]||'')})</span><br>${esc(r.level_estimate.comment||'')}<br><span class="mut">${esc(t('levelNote'))}</span>`;d.appendChild(x)}
+ if(r.exercise&&r.exercise.prompt){const h=document.createElement('div');h.className='ex';d.appendChild(h);mountExercise(h,r.exercise,()=>{})}
+ return d;
+}
+function addBubble(m){const box=$('msgs');box.appendChild(bubble(m));box.scrollTop=box.scrollHeight}
+let busy=false;
+async function send(text,hidden=false){
+ if(busy||!curSid)return;
+ text=String(text||'').trim();if(!text)return;
+ if(!S.key){toast(t('noKey'),4000);return}
+ busy=true;stopListen();
+ const sid=curSid,sess=await dbGet('sessions',sid);
+ await dbPut('messages',{sid,role:'user',text,hidden,ts:Date.now()});
+ if(!hidden){addBubble({role:'user',text});$('inp').value='';autoGrow()}
+ const th=document.createElement('div');th.className='bub note';th.textContent=t('thinking');$('msgs').appendChild(th);$('msgs').scrollTop=1e9;
+ let ok=false;
+ try{
+  const hist=(await msgsOf(sid)).filter(m=>m.role==='user'||m.role==='ai').slice(-24);
+  const contents=hist.map(m=>({role:m.role==='ai'?'model':'user',parts:[{text:m.role==='ai'?(m.raw||m.text||''):m.text}]}));
+  const out=await geminiJSON(contents,{system:await sysPrompt(sess)});
+  let data=out.json,fallback=false;
+  if(!data||!Array.isArray(data.segments)||!data.segments.length){fallback=true;data={segments:[{lang:S.active,text:out.raw,role:'reply',reading:'',translation:''}]}}
+  data.segments=data.segments.filter(x=>x&&x.text);
+  const rec={sid,role:'ai',data,raw:fallback?out.raw:JSON.stringify(data),text:data.segments.map(x=>x.text).join(' '),fallback,ts:Date.now()};
+  rec.id=await dbPut('messages',rec);th.remove();addBubble(rec);ok=true;
+  await afterTurn(sess,data);
+  if(S.autoRead||S.hf)speak(data.segments.map(x=>({text:x.text,lang:x.lang})),()=>{if(S.hf&&!data.session_complete)startMic(true)});
+ }catch(e){
+  th.remove();const n=document.createElement('div');n.className='bub note';
+  n.innerHTML=esc(t('error')+e.message)+` <button class="sm sec" id="rt">${esc(t('retry'))}</button>`;$('msgs').appendChild(n);
+  n.querySelector('#rt').onclick=async()=>{n.remove();busy=false;const ms=await msgsOf(sid);const last=ms[ms.length-1];if(last&&last.role==='user'){await dbDel('messages',last.id)}send(last?last.text:text,last?last.hidden:hidden)};
+ }
+ busy=false;return ok;
+}
+async function afterTurn(sess,data){
+ sess=await dbGet('sessions',sess.id);sess.updated=Date.now();
+ if(Array.isArray(data.checklist)&&data.checklist.length&&!sess.checklist.length)sess.checklist=data.checklist.map(String);
+ if(Array.isArray(data.checklist_done))sess.done=[...new Set([...sess.done,...data.checklist_done.map(Number)])];
+ await dbPut('sessions',sess);renderChecklist(sess);
+ for(const c of data.corrections||[])if(c&&c.corrected&&S.corr!=='off')await dbPut('errors',{lang:sess.lang,category:c.category||'other',original:c.original||'',corrected:c.corrected,explanation:c.explanation||'',ts:Date.now()});
+ for(const v of data.new_vocab||[])if(v&&v.term)await addVocab(lc2(v.lang)||sess.lang,v.term,v);
+ if(data.level_estimate&&data.level_estimate.level){S.levelEst={level:data.level_estimate.level,note:data.level_estimate.comment||'',date:todayISO(),lang:sess.lang};saveS()}
+}
+function startMic(auto=false){
+ const el=$('inp');
+ listen(el,had=>{
+  if(had&&(S.autoSend||S.hf)){emptyTries=0;send(el.value)}
+  else if(S.hf&&auto&&++emptyTries<3)startMic(true);
+ });
+}
+function autoGrow(){const e=$('inp');e.style.height='auto';e.style.height=Math.min(120,e.scrollHeight)+'px'}
+
+/* ===== EXERCISES (shared by chat and lessons) ===== */
+const normAns=s=>normTxt(s);
+const normNS=s=>normTxt(s).replace(/\s+/g,'');
+function mountExercise(host,ex,onDone){
+ const type=ex.type||'mc';let done=false;
+ host.innerHTML=`<div style="margin-bottom:8px">${esc(ex.prompt)}</div><div class="body"></div><div class="fb" style="margin-top:8px"></div>`;
+ const body=host.querySelector('.body'),fb=host.querySelector('.fb');
+ const finish=(ok)=>{if(done)return;done=true;fb.innerHTML=(ok?`<b style="color:var(--ok)">${esc(t('correctMsg'))}</b>`:`<b style="color:var(--bad)">${esc(t('wrongMsg'))}</b> ${esc(ex.answer)}`)+(ex.explanation?`<div class="mut">${esc(ex.explanation)}</div>`:'');onDone(ok)};
+ if(type==='mc'&&Array.isArray(ex.options)){
+  ex.options.forEach(o=>{const b=document.createElement('button');b.className='opt';b.textContent=o;b.onclick=()=>{if(done)return;const ok=normAns(o)===normAns(ex.answer);b.classList.add(ok?'good':'bad');if(!ok)[...body.children].forEach(x=>{if(normAns(x.textContent)===normAns(ex.answer))x.classList.add('good')});finish(ok)};body.appendChild(b)});
+ }else if(type==='order'&&Array.isArray(ex.options)){
+  const pick=document.createElement('div'),pool=document.createElement('div');pick.style.cssText='min-height:42px;padding:6px;border:1px dashed var(--bd);border-radius:8px;margin-bottom:8px';
+  const chosen=[];
+  ex.options.forEach(o=>{const b=document.createElement('button');b.className='chip';b.style.cssText='background:var(--sf2);color:var(--tx);border:1px solid var(--bd);font-size:16px';b.textContent=o;b.onclick=()=>{if(done)return;if(b.parentNode===pool){pick.appendChild(b);chosen.push(b)}else{pool.appendChild(b);chosen.splice(chosen.indexOf(b),1)}};pool.appendChild(b)});
+  const chk=document.createElement('button');chk.textContent=t('check');chk.style.marginTop='8px';
+  chk.onclick=()=>{if(done)return;finish(normNS(chosen.map(b=>b.textContent).join(' '))===normNS(ex.answer));chk.disabled=true};
+  body.append(pick,pool,chk);
+ }else{
+  const i=document.createElement('input');i.autocomplete='off';i.autocapitalize='off';i.spellcheck=false;
+  const chk=document.createElement('button');chk.textContent=t('check');chk.style.marginTop='8px';
+  const go=()=>{if(done)return;finish(normAns(i.value)===normAns(ex.answer));chk.disabled=true;i.disabled=true};
+  chk.onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go()};body.append(i,chk);
+ }
+}
+
+/* ===== MODALS ===== */
+function modal(html){const h=$('modal-host');h.innerHTML=`<div class="modal"><div>${html}</div></div>`;return h.firstChild.firstChild}
+const closeModal=()=>{$('modal-host').innerHTML=''};
+const langOpts=(sel,list=CODES)=>list.map(c=>`<option value="${c}"${c===sel?' selected':''}>${esc(LANGS[c].native)}</option>`).join('');
+
+/* ===== NAVIGATION ===== */
+let screen='home';
+function go(name){
+ screen=name;stopListen();
+ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='s-'+name));
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===(name==='tool'?'home':name)));
+ ({home:renderHome,review:renderReview,progress:renderProgress,settings:renderSettings,chat:renderChat}[name]||(()=>{}))();
+}
+
+/* ===== HOME ===== */
+async function renderHome(){
+ const el=$('s-home'),act=await dbGet('activity',todayISO()),mins=Math.floor(((act&&act.secs)||0)/60);
+ const due=(await dbAll('vocab')).filter(v=>v.lang===S.active&&v.due<=todayISO()).length;
+ const last=(await dbAll('sessions')).filter(s=>s.lang===S.active).sort((a,b)=>b.updated-a.updated)[0];
+ el.innerHTML=`<h2>${esc(t('practice'))}</h2>
+ <div class="card"><label style="margin-top:0">${esc(t('studying'))}</label><select id="h-lang">${langOpts(S.active,S.targets)}</select>
+ <div class="row" style="margin-top:12px;justify-content:space-between"><span>${esc(t('goalToday'))}</span><b>${mins} / ${S.daily} ${esc(t('min'))}</b></div>
+ <div class="bar" style="margin-top:6px"><i style="width:${Math.min(100,mins/S.daily*100)}%"></i></div></div>
+ ${last?`<button class="sec" id="h-resume" style="width:100%;margin-bottom:12px;text-align:left">▶ ${esc(t('resume'))}: ${esc(last.title)}</button>`:''}
+ <div class="grid">
+  <button class="mode" data-m="free"><span class="ic">💬</span>${esc(t('mFree'))}</button>
+  <button class="mode" data-m="scen"><span class="ic">🎭</span>${esc(t('mScen'))}</button>
+  <button class="mode" data-m="lesson"><span class="ic">📘</span>${esc(t('mLesson'))}</button>
+  <button class="mode" data-m="dict"><span class="ic">🎧</span>${esc(t('mDict'))}</button>
+  <button class="mode" data-m="level"><span class="ic">🎯</span>${esc(t('mLevel'))}</button>
+  <button class="mode" data-m="review"><span class="ic">🧠</span>${esc(t('review'))}<span class="mut">${due} ${esc(t('dueCards'))}</span></button>
+ </div>
+ <div class="card" style="margin-top:14px"><button class="sec sm" id="h-inst" style="display:none"></button>
+ <div class="mut" style="margin-top:8px">${esc(t('installTip'))}</div><button class="sec sm" id="h-unin" style="margin-top:8px">${esc(t('uninstallHow'))}</button></div>`;
+ $('h-lang').onchange=e=>{S.active=e.target.value;saveS();renderHome()};
+ if($('h-resume'))$('h-resume').onclick=()=>loadSession(last.id);
+ el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>startMode(b.dataset.m));
+ $('h-unin').onclick=showUninstall;
+ syncInstallBtns();
+}
+function needKey(){if(!S.key){toast(t('noKey'),4000);go('settings');return true}return false}
+function startMode(m){
+ if(m==='review')return go('review');
+ if(needKey())return;
+ if(m==='free')return newSession('free');
+ if(m==='level')return newSession('level');
+ if(m==='lesson')return renderLesson();
+ if(m==='dict')return renderDictation();
+ if(m==='scen'){
+  const h=modal(`<h2>${esc(t('scenPick'))}</h2>`+SCEN.map(s=>`<button class="sec opt" data-s="${s}">${SCEN_EMO[s]} ${esc(t('sc_'+s))}</button>`).join('')+`<button class="sec" id="mc" style="margin-top:8px">${esc(t('cancel'))}</button>`);
+  h.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{closeModal();newSession('scenario',b.dataset.s)});
+  h.querySelector('#mc').onclick=closeModal;
+ }
+}
+
+/* ===== LESSONS ===== */
+const CHIPS={en:['Food','Travel','Past tense','Greetings'],pt:['Comida','Viagem','Passado','Cumprimentos']};
+function renderLesson(){
+ go('tool');const el=$('s-tool');
+ el.innerHTML=`<h2>📘 ${esc(t('mLesson'))}</h2><div class="card"><label style="margin-top:0">${esc(t('lessonTopic'))}</label><input id="l-topic" placeholder="${esc((CHIPS[S.ui]||CHIPS.en)[0])}…">
+ <div style="margin:8px 0">${(CHIPS[S.ui]||CHIPS.en).map(c=>`<button class="chip sec" style="border:none;color:var(--tx)">${esc(c)}</button>`).join('')}</div>
+ <button id="l-go" style="width:100%">${esc(t('generate'))}</button></div><div id="l-out"></div>`;
+ el.querySelectorAll('.chip').forEach(c=>c.onclick=()=>$('l-topic').value=c.textContent);
+ $('l-go').onclick=async()=>{
+  const topic=$('l-topic').value.trim();if(!topic)return;
+  const out=$('l-out');out.innerHTML=`<div class="mut">${esc(t('thinking'))}</div>`;$('l-go').disabled=true;
+  try{
+   const T=S.active,N=S.native;
+   const sys=`You are a language teacher. Student native language: ${nameOf(N)}. Target: ${nameOf(T)}. Level ${S.level}. Write explanations, translations and exercise prompts in ${nameOf(N)}; target-language content in ${nameOf(T)}. Plain text only.`;
+   const p=`Create a mini-lesson on: "${topic}". Return ONLY JSON: {"title":"","explanation":"max 120 words in ${nameOf(N)}","examples":[5 items {"text":"${nameOf(T)}","reading":"${ASIAN.includes(T)?READING[T]:''}","translation":"${nameOf(N)}"}],"exercises":[3 to 5 items {"type":"mc|fill|translate|order","prompt":"","options":[],"answer":"","explanation":""}]}. Rules: mc has 3-4 options and answer equals one option exactly; fill prompt contains ___ and answer is the missing text in ${nameOf(T)}; translate prompt is a ${nameOf(N)} sentence and answer is its ${nameOf(T)} translation; order prompt is a ${nameOf(N)} sentence, options are the ${nameOf(T)} words/chunks shuffled, answer is the full correct ${nameOf(T)} sentence. Mix types.`;
+   const r=await geminiJSON(p,{system:sys});const L=r.json;
+   if(!L||!Array.isArray(L.exercises))throw new Error('Invalid lesson JSON');
+   showLesson(L,topic);
+  }catch(e){out.innerHTML=`<div class="corr">${esc(t('error')+e.message)}</div>`}
+  $('l-go').disabled=false;
+ };
+}
+function showLesson(L,topic){
+ const out=$('l-out'),T=S.active;
+ out.innerHTML=`<div class="card"><h2>${esc(L.title||topic)}</h2><div style="white-space:pre-wrap">${esc(L.explanation||'')}</div></div>
+ <h3>${esc(t('examples'))}</h3>`+(L.examples||[]).map((e,i)=>`<div class="card seg"><span class="tx">${esc(e.text)}</span><span class="ctl"><button data-ix="${i}" data-p="1">🔊</button><button data-ix="${i}" data-p="0.7">🐢</button></span>${e.reading&&S.showRead?`<div class="rd">${esc(e.reading)}</div>`:''}${S.showTrans?`<div class="tr">${esc(e.translation)}</div>`:''}</div>`).join('')
+ +`<h3>${esc(t('exercises'))}</h3><div id="l-ex"></div><div id="l-score"></div>`;
+ out.querySelectorAll('.ctl button').forEach(b=>b.onclick=()=>speak([{text:L.examples[b.dataset.ix].text,lang:T}],null,parseFloat(b.dataset.p)));
+ (async()=>{for(const e of L.examples||[])await addVocab(T,e.text,{reading:e.reading,translation:e.translation})})();
+ const exs=L.exercises;let idx=0,correct=0;
+ const next=()=>{
+  const host=$('l-ex');
+  if(idx>=exs.length){const sc=`${correct}/${exs.length}`;$('l-score').innerHTML=`<div class="card"><b>${esc(t('score'))}: ${sc}</b></div>`;host.innerHTML='';
+   dbPut('lessons',{lang:T,topic:L.title||topic,score:correct,total:exs.length,ts:Date.now()});addSecs(0);return}
+  const d=document.createElement('div');d.className='ex';host.innerHTML='';host.appendChild(d);
+  mountExercise(d,exs[idx],ok=>{if(ok)correct++;idx++;const b=document.createElement('button');b.textContent=t('next');b.style.marginTop='10px';b.onclick=next;d.appendChild(b)});
+ };
+ next();
+}
+
+/* ===== DICTATION / LISTEN & REPEAT ===== */
+let dict=null,dictViaSpeech=false;
+function renderDictation(){
+ go('tool');const el=$('s-tool');dict=null;
+ el.innerHTML=`<h2>🎧 ${esc(t('mDict'))}</h2><div class="card">
+ <button id="d-new" style="width:100%">${esc(t('newSentence'))}</button>
+ <div id="d-play" class="row" style="margin-top:10px;display:none"><button id="d-1" class="sec">🔊</button><button id="d-2" class="sec">🐢</button></div>
+ <textarea id="d-inp" rows="2" placeholder="${esc(t('yourAnswer'))}" style="margin-top:10px;display:none"></textarea>
+ <div class="row" id="d-act" style="margin-top:8px;display:none"><button id="d-mic">🎤</button><button id="d-chk" class="ok">${esc(t('check'))}</button></div>
+ <div class="mut" style="margin-top:8px">${esc(t('srNote'))}</div></div><div id="d-res"></div>`;
+ $('d-new').onclick=async()=>{
+  $('d-new').disabled=true;$('d-res').innerHTML='';
+  try{
+   const T=S.active,N=S.native;
+   const r=await geminiJSON(`Write ONE natural sentence (6-14 words) in ${nameOf(T)} for a ${S.level} learner${S.goal?` interested in: ${S.goal}`:''}. Random topic #${Math.floor(Math.random()*1e6)}. Return ONLY JSON {"text":"","reading":"${ASIAN.includes(T)?READING[T]:''}","translation":"in ${nameOf(N)}"}`,{temp:1});
+   if(!r.json||!r.json.text)throw new Error('Invalid JSON');
+   dict=r.json;$('d-inp').value='';
+   ['d-play','d-act'].forEach(i=>$(i).style.display='flex');$('d-inp').style.display='block';
+   speak([{text:dict.text,lang:T}]);
+  }catch(e){toast(t('error')+e.message,5000)}
+  $('d-new').disabled=false;
+ };
+ $('d-1').onclick=()=>dict&&speak([{text:dict.text,lang:S.active}]);
+ $('d-2').onclick=()=>dict&&speak([{text:dict.text,lang:S.active}],null,0.7);
+ const check=()=>{
+  if(!dict)return;const T=S.active,exp=tokens(dict.text,T),got=tokens($('d-inp').value,T),df=diffTokens(exp,got);
+  const m=df.filter(x=>x.t==='m').length,acc=exp.length?Math.round(m/exp.length*100):0,sp=ASIAN.includes(T)?'':' ';
+  $('d-res').innerHTML=`<div class="card"><div class="diff" style="font-size:20px">${df.map(x=>`<span class="${x.t}">${esc(x.v)}</span>`).join(sp)}</div>
+  <div style="margin-top:8px"><b>${esc(t('accuracy'))}: ${acc}%</b></div><div class="tx" style="margin-top:8px">${esc(dict.text)}</div>
+  ${dict.reading&&S.showRead?`<div class="rd">${esc(dict.reading)}</div>`:''}<div class="tr">${esc(dict.translation||'')}</div>
+  ${dictViaSpeech?`<div class="mut" style="margin-top:6px">${esc(t('srNote'))}</div>`:''}
+  <button class="sec sm" id="d-save" style="margin-top:8px">${esc(t('saveReview'))}</button></div>`;
+  $('d-save').onclick=async()=>{await addVocab(T,dict.text,{reading:dict.reading,translation:dict.translation});toast(t('saved'))};
+  dbPut('lessons',{lang:T,topic:'🎧 '+dict.text.slice(0,40),score:acc,total:100,ts:Date.now()});
+ };
+ $('d-chk').onclick=()=>{dictViaSpeech=false;check()};
+ $('d-mic').onclick=()=>{if(listening)return stopListen();S.speakMode='target';dictViaSpeech=true;listen($('d-inp'),had=>{if(had&&S.autoSend)check()})};
+}
+
+/* ===== REVIEW (flashcards) ===== */
+let rq_=[],rtotal=0;
+async function renderReview(){
+ const el=$('s-review');
+ rq_=(await dbAll('vocab')).filter(v=>v.lang===S.active&&v.due<=todayISO()).sort((a,b)=>a.due.localeCompare(b.due)).slice(0,20);
+ rtotal=rq_.length;showCard(el);
+}
+function showCard(el){
+ el=el||$('s-review');
+ if(!rq_.length){el.innerHTML=`<h2>🧠 ${esc(t('review'))}</h2><div class="card fc"><div class="big">${rtotal?'🎉 '+esc(t('doneReview')):esc(t('noCards'))}</div></div>`;return}
+ const v=rq_[0],types=['reco','prod',hasTTS?'listen':'reco'],ty=types[(v.reps+v.miss)%3];
+ const front=ty==='reco'?`<div class="big" lang="${bcp(v.lang)}">${esc(v.term)}</div>`:ty==='prod'?`<div class="big">${esc(v.translation||v.term)}</div>`:`<button id="c-play" style="font-size:36px;width:90px;height:90px;border-radius:50%">🔊</button>`;
+ const back=`<div class="big" lang="${bcp(v.lang)}">${esc(v.term)}</div>${v.reading?`<div class="rd" style="color:var(--warn)">${esc(v.reading)}</div>`:''}<div>${esc(v.translation)}</div>${v.example?`<div class="mut">${esc(v.example)}</div>`:''}`;
+ el.innerHTML=`<h2>🧠 ${esc(t('review'))} <span class="mut">${rq_.length} ${esc(t('cardsLeft'))}</span></h2>
+ <div class="card fc" id="c-front">${front}</div><div class="card fc" id="c-back" style="display:none">${back}</div>
+ <button id="c-show" style="width:100%">${esc(t('showAns'))}</button>
+ <div class="row" id="c-grade" style="display:none"><button class="danger" id="c-no" style="flex:1">${esc(t('didnt'))}</button><button class="ok" id="c-yes" style="flex:1">${esc(t('knew'))}</button></div>`;
+ const play=()=>speak([{text:v.term,lang:v.lang}]);
+ if($('c-play')){$('c-play').onclick=play;setTimeout(play,150)}
+ $('c-show').onclick=()=>{$('c-back').style.display='flex';$('c-show').style.display='none';$('c-grade').style.display='flex';if(ty!=='listen')play()};
+ const grade=async ok=>{
+  rq_.shift();srsReview(v,ok);await dbPut('vocab',v);
+  if(!ok&&!v._again){v._again=1;rq_.push(v)}
+  addSecs(0);showCard();
+ };
+ $('c-yes').onclick=()=>grade(true);$('c-no').onclick=()=>grade(false);
+}
+
+/* ===== PROGRESS ===== */
+async function renderProgress(){
+ const el=$('s-progress'),act=await dbAll('activity'),voc=(await dbAll('vocab')).filter(v=>v.lang===S.active);
+ const errs=(await dbAll('errors')).filter(e=>e.lang===S.active),les=(await dbAll('lessons')).filter(l=>l.lang===S.active).sort((a,b)=>b.ts-a.ts).slice(0,10);
+ const st={new:0,learning:0,mastered:0};voc.forEach(v=>st[vStage(v)]++);
+ const m={};act.forEach(a=>m[a.id]=a.secs||0);
+ const days=[...Array(7)].map((_,i)=>addDays(todayISO(),i-6)),vals=days.map(d=>Math.round((m[d]||0)/60)),mx=Math.max(1,...vals);
+ const cat={};errs.forEach(e=>{(cat[e.category]=cat[e.category]||[]).push(e)});
+ const top=Object.entries(cat).sort((a,b)=>b[1].length-a[1].length).slice(0,5);
+ const le=S.levelEst;
+ el.innerHTML=`<h2>📈 ${esc(t('progress'))} · ${esc(LANGS[S.active].native)}</h2>
+ <div class="stats"><div class="card"><div class="big2">🔥${calcStreak(act)}</div><div class="mut">${esc(t('streak'))}</div></div>
+ <div class="card"><div class="big2">${vals[6]}</div><div class="mut">${esc(t('min'))} · ${esc(t('goalToday'))} ${S.daily}</div></div>
+ <div class="card"><div class="big2">${voc.length}</div><div class="mut">${esc(t('words'))}</div></div></div>
+ <div class="card"><b>${esc(t('weekTime'))}</b><div class="wk" style="margin-top:8px">${vals.map((v,i)=>`<div><i style="height:${v/mx*80}px"></i>${v}<br>${days[i].slice(5)}</div>`).join('')}</div></div>
+ <div class="card"><b>${esc(t('words'))}</b><div class="row" style="margin-top:8px"><span class="chip">${esc(t('wNew'))}: ${st.new}</span><span class="chip">${esc(t('wLearning'))}: ${st.learning}</span><span class="chip">${esc(t('wMastered'))}: ${st.mastered}</span></div></div>
+ <div class="card"><b>${esc(t('levelEst'))}</b><div style="margin-top:6px">${le?`<span class="big2">${esc(le.level)}</span> <span class="mut">${esc(EQUIV[le.level]||'')} · ${esc(le.date)}</span><div>${esc(le.note||'')}</div>`:esc(t('noData'))}</div><div class="mut">${esc(t('levelNote'))}</div>
+ <button class="sec sm" id="p-ass" style="margin-top:8px">${esc(t('reassess'))}</button></div>
+ <div class="card"><b>${esc(t('topErrors'))}</b>${top.length?top.map(([c,l])=>`<div style="margin-top:8px"><span class="chip">${esc(c)} ×${l.length}</span><div class="mut"><s>${esc(l[l.length-1].original)}</s> → ${esc(l[l.length-1].corrected)}</div></div>`).join(''):`<div class="mut">${esc(t('noData'))}</div>`}</div>
+ <div class="card"><b>${esc(t('lessonHist'))}</b>${les.length?les.map(l=>`<div class="mut" style="margin-top:6px">${new Date(l.ts).toLocaleDateString()} · ${esc(l.topic)} · ${l.score}/${l.total}</div>`).join(''):`<div class="mut">${esc(t('noData'))}</div>`}</div>`;
+ $('p-ass').onclick=async()=>{if(needKey())return;$('p-ass').disabled=true;try{await assessLevel();toast(t('saved'))}catch(e){toast(t('error')+e.message,5000)}renderProgress()};
+}
+async function assessLevel(){
+ const voc=(await dbAll('vocab')).filter(v=>v.lang===S.active),errs=(await dbAll('errors')).filter(e=>e.lang===S.active).slice(-30);
+ const sum={target:nameOf(S.active),statedLevel:S.level,words:voc.length,mastered:voc.filter(v=>vStage(v)==='mastered').length,recentMistakes:errs.map(e=>({cat:e.category,original:e.original,corrected:e.corrected})),sampleWords:voc.slice(-25).map(v=>v.term)};
+ const r=await geminiJSON(`Estimate the student's CEFR level in ${nameOf(S.active)} from this data. Be conservative. Return ONLY JSON {"level":"A1|A2|B1|B2|C1|C2","comment":"1-2 sentences in ${nameOf(S.native)}"}\n${JSON.stringify(sum)}`,{temp:0.3});
+ if(!r.json||!r.json.level)throw new Error('Invalid JSON');
+ S.levelEst={level:r.json.level,note:r.json.comment||'',date:todayISO(),lang:S.active};saveS();
+}
+
+/* ===== SESSIONS LIST / END ===== */
+async function showSessions(){
+ const list=(await dbAll('sessions')).filter(s=>s.lang===S.active).sort((a,b)=>b.updated-a.updated);
+ const h=modal(`<h2>${esc(t('sessions'))} · ${esc(LANGS[S.active].native)}</h2>`+(list.length?list.map(s=>`<div class="li" data-id="${s.id}"><div class="gr"><b>${esc(s.title)}</b><div class="mut">${new Date(s.updated).toLocaleString()} · ${Math.round((s.duration||0)/60)} ${esc(t('min'))}</div></div><button class="sm sec" data-a="r">✏️</button><button class="sm danger" data-a="d">🗑</button></div>`).join(''):`<div class="mut">${esc(t('noData'))}</div>`)+`<button class="sec" id="mc" style="margin-top:8px;width:100%">${esc(t('close'))}</button>`);
+ h.querySelector('#mc').onclick=closeModal;
+ h.querySelectorAll('.li').forEach(li=>{const id=+li.dataset.id;
+  li.querySelector('.gr').onclick=()=>{closeModal();loadSession(id)};
+  li.querySelector('[data-a=r]').onclick=async()=>{const n=prompt(t('rename'),'');if(n){const s=await dbGet('sessions',id);s.title=n;await dbPut('sessions',s);showSessions()}};
+  li.querySelector('[data-a=d]').onclick=async()=>{if(!confirm(t('confirm')))return;for(const m of await msgsOf(id))await dbDel('messages',m.id);await dbDel('sessions',id);if(curSid===id){curSid=null;renderChat()}showSessions()};
+ });
+}
+async function endSession(){
+ if(!curSid)return;
+ const sid=curSid,ms=(await msgsOf(sid)).filter(m=>!m.hidden&&(m.role==='user'||m.role==='ai'));
+ const s=await dbGet('sessions',sid);
+ if(ms.filter(m=>m.role==='user').length<1||!S.key){curSid=null;go('home');return}
+ toast(t('thinking'));
+ let r=null;
+ try{
+  const tr=ms.map(m=>(m.role==='user'?'STUDENT: ':'TEACHER: ')+m.text).join('\n');
+  const o=await geminiJSON(`Review this ${nameOf(s.lang)} lesson transcript for a ${S.level} student. Write everything except student sentences in ${nameOf(S.native)}. Return ONLY JSON {"summary":"2-3 sentences","corrections":${S.corr==='end'?'[{"original":"","corrected":"","explanation":"","category":"grammar|vocabulary|spelling|word-order|tense|particles|other"}] (real mistakes in STUDENT lines)':'[]'},"new_vocab":[{"term":"","lang":"${s.lang}","reading":"","translation":"","example":""}] (max 5),"memory_proposals":["short fact about the student: interests, goals, recurring mistakes, correction preference (max 3)"]}\nCurrent memory:\n${await memoryText()}\n\n${tr}`,{temp:0.3});
+  r=o.json;
+ }catch(e){toast(t('error')+e.message,4000)}
+ s.ended=true;await dbPut('sessions',s);S.sessCount++;saveS();
+ if(r){
+  if(S.corr==='end')for(const c of r.corrections||[])if(c&&c.corrected)await dbPut('errors',{lang:s.lang,category:c.category||'other',original:c.original||'',corrected:c.corrected,explanation:c.explanation||'',ts:Date.now()});
+  for(const v of r.new_vocab||[])if(v&&v.term)await addVocab(s.lang,v.term,v);
+  const props=(r.memory_proposals||[]).filter(Boolean).map(String);
+  const h=modal(`<h2>${esc(t('sessionSummary'))}</h2><div>${esc(r.summary||'')}</div>`
+   +(S.corr==='end'&&(r.corrections||[]).length?`<h3>${esc(t('corrections'))}</h3>`+r.corrections.map(c=>`<div class="corr"><s>${esc(c.original)}</s> → <b>${esc(c.corrected)}</b><br>${esc(c.explanation)}</div>`).join(''):'')
+   +(props.length?`<h3>${esc(t('memProposals'))}</h3>`+props.map((p,i)=>`<label class="sw" style="margin:0"><span>${esc(p)}</span><input type="checkbox" data-p="${i}" checked></label>`).join(''):'')
+   +`<div class="row" style="margin-top:12px"><button id="m-ok" style="flex:1">${esc(props.length?t('saveSel'):t('close'))}</button></div>`);
+  h.querySelector('#m-ok').onclick=async()=>{
+   for(const cb of h.querySelectorAll('[data-p]'))if(cb.checked)await addMemory(props[+cb.dataset.p]);
+   closeModal();
+  };
+ }
+ if(S.sessCount%5===0&&S.key)assessLevel().catch(()=>{});
+ curSid=null;go('home');
+}
+async function addMemory(text){
+ text=String(text||'').trim();if(!text)return;
+ let all=(await dbAll('memory')).sort((a,b)=>a.id-b.id);
+ if(all.some(m=>m.text.toLowerCase()===text.toLowerCase()))return;
+ await dbPut('memory',{text:text.slice(0,200),ts:Date.now()});
+ all=(await dbAll('memory')).sort((a,b)=>a.id-b.id);
+ while(all.length>20){await dbDel('memory',all.shift().id)}
+}
+
+/* ===== SETTINGS ===== */
+async function renderSettings(){
+ const el=$('s-settings'),mem=(await dbAll('memory')).sort((a,b)=>a.id-b.id);
+ const vl=[...new Set([S.native,...S.targets])];
+ el.innerHTML=`<h2>⚙️ ${esc(t('settings'))}</h2>
+ ${S.welcomed?'':`<div class="card" style="border-color:var(--warn)">${esc(t('welcome'))}</div>`}
+ <div class="card"><label style="margin-top:0">${esc(t('setUi'))}</label><select data-k="ui">${langOpts(S.ui)}</select>
+ <label>${esc(t('setNative'))}</label><select data-k="native">${langOpts(S.native)}</select>
+ <label>${esc(t('setTargets'))}</label><div>${CODES.map(c=>`<label class="sw" style="margin:0"><span>${esc(LANGS[c].native)}</span><input type="checkbox" data-tg="${c}"${S.targets.includes(c)?' checked':''}></label>`).join('')}</div>
+ <label>${esc(t('setActive'))}</label><select data-k="active">${langOpts(S.active,S.targets)}</select>
+ <label>${esc(t('setLevel'))}</label><select data-k="level">${Object.keys(EQUIV).map(l=>`<option${l===S.level?' selected':''}>${l}</option>`).join('')}</select>
+ <label>${esc(t('setGoal'))}</label><input data-k="goal" value="${esc(S.goal)}" maxlength="120">
+ <label>${esc(t('setCorr'))}</label><select data-k="corr">${[['each','corrEach'],['end','corrEnd'],['off','corrOff']].map(([v,k])=>`<option value="${v}"${S.corr===v?' selected':''}>${esc(t(k))}</option>`).join('')}</select>
+ <label>${esc(t('setDaily'))}</label><input type="number" min="1" max="240" data-k="daily" value="${S.daily}"></div>
+ <div class="card"><label style="margin-top:0">${esc(t('setApi'))}</label><input type="password" data-k="key" value="${esc(S.key)}" autocomplete="off" placeholder="AIza…"><div class="mut" style="margin-top:4px">${esc(t('apiHelp'))}</div>
+ <label>${esc(t('setModel'))}</label><select data-k="model">${['gemini-3.5-flash-lite','gemini-3.6-flash','gemini-3.8-flash'].map(m=>`<option${m===S.model?' selected':''}>${m}</option>`).join('')}</select>
+ <label>${esc(t('setTemp'))}: <span id="tv">${S.temp}</span></label><input type="range" min="0" max="1.5" step="0.1" data-k="temp" value="${S.temp}"></div>
+ <div class="card"><label style="margin-top:0">${esc(t('setRate'))}: <span id="rv">${S.rate}x</span></label><input type="range" min="0.5" max="2" step="0.1" data-k="rate" value="${S.rate}">
+ ${vl.map(c=>`<label>${esc(t('setVoice'))} · ${esc(LANGS[c].native)}</label><select data-v="${c}"><option value="">${esc(t('defVoice'))}</option>${voicesFor(c).map(v=>`<option value="${esc(v.name)}"${S.voices[c]===v.name?' selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select>`).join('')}
+ ${[['autoRead','setAutoRead'],['showRead','setReading'],['showTrans','setTrans'],['autoSend','setAutoSend']].map(([k,l])=>`<label class="sw"><span>${esc(t(l))}</span><input type="checkbox" data-b="${k}"${S[k]?' checked':''}></label>`).join('')}</div>
+ <div class="card"><b>${esc(t('memTitle'))}</b><div id="mem" style="margin-top:8px">${mem.map(m=>`<label class="li"><input type="checkbox" data-mid="${m.id}" style="width:auto"><span class="gr">${esc(m.text)}</span></label>`).join('')}</div>
+ <div class="row"><input id="mem-new" placeholder="${esc(t('memHint'))}" style="flex:1" maxlength="200"><button id="mem-add">${esc(t('memAdd'))}</button></div>
+ <div class="row" style="margin-top:8px"><button class="sec sm" id="mem-ds">${esc(t('delSel'))}</button><button class="danger sm" id="mem-da">${esc(t('delAll'))}</button></div></div>
+ <div class="card"><button class="sec" id="x-exp" style="width:100%">${esc(t('expAll'))}</button><div class="mut" style="margin:4px 0 10px">${esc(t('expNote'))}</div>
+ <button class="sec" id="x-imp" style="width:100%">${esc(t('impAll'))}</button><input type="file" id="x-file" accept="application/json" style="display:none"></div>
+ <div class="card"><button class="ok" id="s-inst" style="width:100%;display:none;margin-bottom:8px"></button><button class="sec" id="s-unin" style="width:100%">${esc(t('uninstallHow'))}</button></div>`;
+ el.querySelectorAll('[data-k]').forEach(i=>i.onchange=i.oninput=()=>{
+  const k=i.dataset.k;let v=i.value;if(i.type==='number'||i.type==='range')v=parseFloat(v)||DEF[k];
+  S[k]=v;if(k==='temp')$('tv').textContent=v;if(k==='rate')$('rv').textContent=v+'x';
+  if(k==='key'&&v)S.welcomed=true;saveS();
+  if(i.tagName==='SELECT'&&(k==='ui'||k==='native')){if(k==='ui')applyI18n();renderSettings()}
+  if(k==='active'||k==='level'){}
+ });
+ el.querySelectorAll('[data-tg]').forEach(i=>i.onchange=()=>{
+  const c=i.dataset.tg;S.targets=i.checked?[...new Set([...S.targets,c])]:S.targets.filter(x=>x!==c);
+  if(!S.targets.length){S.targets=[c];i.checked=true}
+  if(!S.targets.includes(S.active))S.active=S.targets[0];saveS();renderSettings();
+ });
+ el.querySelectorAll('[data-v]').forEach(i=>i.onchange=()=>{S.voices[i.dataset.v]=i.value;saveS()});
+ el.querySelectorAll('[data-b]').forEach(i=>i.onchange=()=>{S[i.dataset.b]=i.checked;saveS()});
+ $('mem-add').onclick=async()=>{await addMemory($('mem-new').value);renderSettings()};
+ const sel=()=>[...el.querySelectorAll('[data-mid]:checked')].map(i=>+i.dataset.mid);
+ $('mem-ds').onclick=async()=>{for(const id of sel())await dbDel('memory',id);renderSettings()};
+ $('mem-da').onclick=async()=>{if(confirm(t('confirm'))){await dbClear('memory');renderSettings()}};
+ $('x-exp').onclick=exportAll;$('x-imp').onclick=()=>$('x-file').click();$('x-file').onchange=e=>importAll(e.target.files[0]);
+ $('s-unin').onclick=showUninstall;
+ syncInstallBtns();
+}
+async function exportAll(){
+ const out={app:'polyglot-ai',version:1,date:new Date().toISOString(),settings:Object.assign({},S,{key:''})};
+ for(const s of STORES)out[s]=await dbAll(s);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:'application/json'}));
+ a.download=`polyglot-ai-${todayISO()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+async function importAll(f){
+ if(!f)return;
+ try{
+  const d=JSON.parse(await f.text());if(d.app!=='polyglot-ai')throw new Error('Invalid file');
+  if(!confirm(t('confirm')))return;
+  for(const s of STORES){await dbClear(s);for(const o of d[s]||[])await dbPut(s,o)}
+  const key=S.key;S=Object.assign({},DEF,d.settings||{},{key});saveS();applyI18n();toast(t('imported'));curSid=null;go('settings');
+ }catch(e){toast(t('error')+e.message,5000)}
+}
+
+/* ===== PWA INSTALL ===== */
+let deferred=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+function syncInstallBtns(){
+ const show=!!deferred&&!isStandalone();
+ ['btn-install','h-inst','s-inst'].forEach(id=>{const b=$(id);if(!b)return;b.style.display=show?'':'none';b.textContent='⬇ '+t('install');b.onclick=doInstall});
+}
+async function doInstall(){if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null;syncInstallBtns()}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;syncInstallBtns()});
+window.addEventListener('appinstalled',()=>{deferred=null;syncInstallBtns()});
+function showUninstall(){const h=modal(`<h2>${esc(t('uninstallHow'))}</h2><p style="line-height:1.5">${esc(t('uninstallTxt'))}</p><button id="mc" style="margin-top:12px;width:100%">${esc(t('close'))}</button>`);h.querySelector('#mc').onclick=closeModal}
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+
+/* ===== INIT ===== */
+function bind(){
+ document.querySelectorAll('nav [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+ $('btn-sessions').onclick=showSessions;
+ $('btn-newsess').onclick=()=>go('home');
+ $('btn-end').onclick=endSession;
+ $('btn-stop').onclick=()=>{stopSpeak();stopListen()};
+ $('btn-spk').onclick=()=>{S.speakMode=S.speakMode==='target'?'native':'target';saveS();updTools()};
+ $('btn-hf').onclick=()=>{S.hf=!S.hf;saveS();updTools();if(S.hf&&curSid)startMic(true);else stopListen()};
+ $('mic').onclick=()=>{if(listening)return stopListen();if(!curSid)return toast(t('startChat'));emptyTries=0;startMic()};
+ $('send').onclick=()=>send($('inp').value);
+ $('inp').oninput=autoGrow;
+ $('inp').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();send($('inp').value)}};
+ setInterval(()=>{if(document.visibilityState==='visible'&&(screen==='chat'&&curSid||screen==='review'||screen==='tool'))addSecs(10)},10000);
+}
+async function init(){
+ await openDB();bind();applyI18n();
+ if(!S.targets.includes(S.active))S.active=S.targets[0];
+ go(S.key?'home':'settings');
+ if(!S.key)toast(t('welcome'),5000);
+}
+window.PL={init,srsReview,newVocab,calcStreak,diffTokens,tokens,extractJSON,exportAll,importAll,addVocab,dbAll,dbPut,vStage,addDays,get S(){return S}};
+if(!window.__PL_TEST)init();
+</script>
+</body>
+</html>
